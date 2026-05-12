@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import heroSticker1 from "@/assets/hero-sticker-1.png";
 import heroSticker2 from "@/assets/hero-sticker-2.png";
 import heroSticker3 from "@/assets/hero-sticker-3.png";
@@ -13,12 +12,27 @@ const cards = [
   { img: heroSticker4, rotate: 22,  translateY: 28, zIndex: 1, label: "Together" },
 ];
 
+const glassBtn = {
+  background: "rgba(255,255,255,0.12)",
+  backdropFilter: "blur(20px) saturate(180%)",
+  WebkitBackdropFilter: "blur(20px) saturate(180%)",
+  border: "1px solid rgba(255,255,255,0.22)",
+  boxShadow: "0 4px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25)",
+  color: "white",
+};
+
+const glassOutlineBtn = {
+  background: "rgba(255,255,255,0.04)",
+  backdropFilter: "blur(20px)",
+  WebkitBackdropFilter: "blur(20px)",
+  border: "1px solid rgba(255,255,255,0.14)",
+  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
+  color: "rgba(255,255,255,0.8)",
+};
+
 export function Hero() {
   return (
     <section className="relative min-h-[100dvh] flex flex-col items-center justify-center overflow-hidden pt-20 pb-12 px-4">
-      {/* Soft background gradients */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_50%_0%,rgba(168,139,250,0.07),transparent)] pointer-events-none -z-10" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_40%_40%_at_85%_85%,rgba(163,230,53,0.06),transparent)] pointer-events-none -z-10" />
 
       {/* Badge */}
       <motion.div
@@ -27,7 +41,15 @@ export function Hero() {
         transition={{ duration: 0.5 }}
         className="mb-5"
       >
-        <span className="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-full bg-primary/10 text-primary text-sm font-medium border border-primary/20 tracking-wide">
+        <span
+          className="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-full text-sm font-medium tracking-wide text-white/80"
+          style={{
+            background: "rgba(147,51,234,0.18)",
+            backdropFilter: "blur(16px)",
+            border: "1px solid rgba(147,51,234,0.35)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15)",
+          }}
+        >
           ✦ The Ultimate Gift for Your Partner
         </span>
       </motion.div>
@@ -37,7 +59,8 @@ export function Hero() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: 0.1 }}
-        className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-bold tracking-tight text-foreground text-center leading-[1.05] max-w-3xl"
+        className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-bold tracking-tight text-white text-center leading-[1.05] max-w-3xl"
+        style={{ textShadow: "0 0 80px rgba(147,51,234,0.4)" }}
       >
         Turn Your Love<br />Into Stickers 💖
       </motion.h1>
@@ -57,10 +80,10 @@ export function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.35 + i * 0.06, ease: [0.22, 1, 0.36, 1] }}
             whileHover={{
-              y: -20,
-              rotate: card.rotate * 0.3,
+              y: -22,
+              rotate: card.rotate * 0.25,
               zIndex: 20,
-              scale: 1.06,
+              scale: 1.07,
               transition: { duration: 0.25, ease: "easeOut" },
             }}
             style={{
@@ -73,18 +96,31 @@ export function Hero() {
             }}
             className="cursor-pointer flex-shrink-0"
           >
+            {/* Glass card frame */}
             <div
-              className="rounded-xl overflow-hidden shadow-2xl border-[3px] border-white bg-white"
-              style={{ width: 160, height: 210 }}
+              className="rounded-xl overflow-hidden"
+              style={{
+                width: 160,
+                height: 210,
+                background: "rgba(255,255,255,0.10)",
+                backdropFilter: "blur(12px) saturate(150%)",
+                WebkitBackdropFilter: "blur(12px) saturate(150%)",
+                border: "1px solid rgba(255,255,255,0.22)",
+                boxShadow: "0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.2)",
+                padding: "6px",
+              }}
             >
               <img
                 src={card.img}
                 alt={card.label}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover rounded-lg"
               />
             </div>
-            {/* Shine */}
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-white/25 via-transparent to-transparent pointer-events-none" />
+            {/* Specular top-edge shine */}
+            <div
+              className="absolute top-0 left-0 right-0 h-px rounded-t-xl pointer-events-none"
+              style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)" }}
+            />
           </motion.div>
         ))}
       </motion.div>
@@ -94,7 +130,7 @@ export function Hero() {
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: 0.65 }}
-        className="text-base md:text-lg text-muted-foreground text-center max-w-md leading-relaxed mb-8"
+        className="text-base md:text-lg text-white/55 text-center max-w-md leading-relaxed mb-8"
       >
         Upload your favorite couple photo and create personalized romantic sticker sheets that feel truly yours.
       </motion.p>
@@ -106,23 +142,22 @@ export function Hero() {
         transition={{ duration: 0.7, delay: 0.8 }}
         className="flex flex-col sm:flex-row items-center justify-center gap-3"
       >
-        <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-          <Button
-            size="lg"
-            className="rounded-full bg-foreground text-background hover:bg-foreground/85 text-base px-9 h-12 shadow-lg"
-          >
-            Select Your Stickers
-          </Button>
-        </motion.div>
-        <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
-          <Button
-            size="lg"
-            variant="outline"
-            className="rounded-full text-base px-9 h-12 border-foreground/20 hover:bg-secondary/20"
-          >
-            View Samples
-          </Button>
-        </motion.div>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.97 }}
+          className="rounded-full text-base px-9 h-12 font-semibold cursor-pointer"
+          style={glassBtn}
+        >
+          Select Your Stickers
+        </motion.button>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.97 }}
+          className="rounded-full text-base px-9 h-12 font-medium cursor-pointer"
+          style={glassOutlineBtn}
+        >
+          View Samples
+        </motion.button>
       </motion.div>
     </section>
   );
