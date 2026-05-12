@@ -1,0 +1,272 @@
+Perfect. Now I fully understand the vision.
+
+You want:
+
+* ONLY the landing page prompt right now
+* Inspired by the references in your PDF
+* Minimal but sexy
+* Modern startup aesthetic
+* Interactive hero section
+* Big CTA after hero:
+  “Select Your Stickers”
+* Smooth premium UI
+* Not cluttered with full ecommerce flow yet
+
+Your references show:
+
+* Floating card layouts
+* Soft gradients
+* Rounded UI
+* Modern typography
+* White/light backgrounds
+* Purple + lime accent colors
+* Large bold headline
+* Playful motion graphics
+* Premium SaaS-style landing page aesthetic 
+
+Here’s the refined Replit AI prompt 👇
+
+---
+
+# LANDING PAGE PROMPT FOR REPLIT AI
+
+Create a modern premium landing page for a custom couple sticker brand.
+
+The design aesthetic should be inspired by:
+
+* modern startup websites
+* playful SaaS landing pages
+* floating card UI
+* soft gradients
+* premium motion graphics
+* the attached design references
+
+The website should feel:
+
+* romantic
+* emotional
+* trendy
+* Gen-Z focused
+* cute but premium
+* highly visual
+* clean and minimal
+
+DO NOT make it:
+
+* childish
+* generic ecommerce
+* cartoon-heavy
+* cluttered
+
+The website must look like a real modern funded startup.
+
+---
+
+# HERO SECTION
+
+Design the hero section similar to the uploaded reference:
+
+* centered layout
+* floating cards
+* clean navigation
+* premium spacing
+* soft off-white background
+
+Navbar:
+
+* Logo on left
+* Nav links in center
+* CTA button on right
+
+Navbar links:
+
+* Home
+* How It Works
+* Gallery
+* Reviews
+
+Right side button:
+“Create Yours”
+
+NO download button.
+
+---
+
+# HERO CONTENT
+
+Main headline:
+“Turn Your Love Into Stickers 💖”
+
+Subheadline:
+“Upload your favorite couple photo and create personalized romantic sticker sheets that feel truly yours.”
+
+Primary CTA:
+“Select Your Stickers”
+
+Secondary CTA:
+“View Samples”
+
+Buttons should:
+
+* feel large and premium
+* rounded pill style
+* animated hover effects
+* soft shadows
+
+---
+
+# HERO VISUALS
+
+Create floating sticker-style cards hanging like polaroids similar to the reference image.
+
+Cards should:
+
+* slightly rotate
+* float softly
+* have shadows
+* look playful and premium
+
+Use:
+
+* couple sticker mockups
+* romantic sticker previews
+* cute pose previews
+
+The floating elements should animate smoothly.
+
+Add:
+
+* subtle blur blobs
+* gradient lighting
+* tiny floating hearts
+* smooth motion effects
+
+---
+
+# IMPORTANT SECTION AFTER HERO
+
+Immediately after hero section:
+
+Create a BIG premium section with dark background similar to the second reference image.
+
+Background:
+
+* deep navy / dark purple
+
+Inside center:
+Huge glowing button/card:
+“Select Your Stickers”
+
+This section should feel:
+
+* cinematic
+* visually powerful
+* premium conversion focused
+
+Button/card should:
+
+* slightly glow
+* have hover animation
+* scale on hover
+* contain small text:
+  “Choose your favorite 7 sticker poses”
+
+Around it:
+
+* floating sticker previews
+* sparkles
+* soft gradients
+* animated decorative elements
+
+This section is the MAIN conversion area.
+
+---
+
+# COLOR STYLE
+
+Use color palette inspired by reference:
+
+* soft purple
+* neon lime accents
+* warm white
+* deep navy
+* subtle pink tones
+
+The UI should feel:
+cute + premium + startup aesthetic.
+
+---
+
+# TYPOGRAPHY
+
+Use:
+
+* bold modern headlines
+* clean sans-serif font
+* lots of whitespace
+
+Headline style:
+large, emotional, eye-catching.
+
+---
+
+# ANIMATIONS
+
+Use:
+
+* Framer Motion
+* smooth fade-ins
+* floating animations
+* magnetic hover buttons
+* premium transitions
+
+Animations should feel:
+smooth and expensive.
+
+---
+
+# MOBILE DESIGN
+
+The mobile version is VERY important.
+
+Ensure:
+
+* clean stacking
+* floating cards remain visible
+* CTA always visible
+* responsive typography
+* premium mobile spacing
+
+---
+
+# TECH STACK
+
+Use:
+
+* React
+* Next.js
+* Tailwind CSS
+* Framer Motion
+
+Code should:
+
+* be clean
+* production-ready
+* component-based
+* modern
+
+---
+
+# FINAL GOAL
+
+The landing page should instantly make couples feel:
+“I want to make this for my partner.”
+
+Focus heavily on:
+
+* emotional connection
+* visual attraction
+* premium aesthetics
+* conversion-focused design
+
+The final result should look like a modern viral DTC startup website.

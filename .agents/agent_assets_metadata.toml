@@ -1,0 +1,38 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "gfwNaUCusmwpSnmM1Z9sb"
+uri = "file://artifacts/couple-stickers/src/assets/hero-sticker-1.png"
+type = "image"
+title = "Cute couple kissing sticker illustration"
+
+[[generated]]
+id = "Qri-x-4J0cwNcXnUFPoeZ"
+uri = "file://artifacts/couple-stickers/src/assets/hero-sticker-2.png"
+type = "image"
+title = "Couple holding hands sticker illustration"
+
+[[generated]]
+id = "cOMQnVOxCrSIVWgtgtOkO"
+uri = "file://artifacts/couple-stickers/src/assets/hero-sticker-3.png"
+type = "image"
+title = "Couple hugging sticker illustration"
+
+[[generated]]
+id = "AACY48j6HCtGR6Qvv8YIR"
+uri = "file://artifacts/couple-stickers/src/assets/hero-sticker-4.png"
+type = "image"
+title = "Couple laughing sticker illustration"
+
+[[generated]]
+id = "kDZa1Jz_faC31IH_jvw15"
+uri = "file://artifacts/couple-stickers/src/assets/gallery-1.png"
+type = "image"
+title = "Aesthetic sticker sheet"
+
+[[generated]]
+id = "qOaV2lNDXhT-5gNsRTGvN"
+uri = "file://artifacts/couple-stickers/src/assets/gallery-2.png"
+type = "image"
+title = "Couple putting sticker on phone"
