@@ -4,21 +4,33 @@ import { Upload, Wand2, Package } from "lucide-react";
 const steps = [
   {
     icon: Upload,
+    emoji: "📸",
     title: "Upload Photo",
     description: "Pick a favorite photo of you and your partner. We'll handle the rest.",
-    color: "rgba(147,51,234,0.6)",
+    glowColor: "rgba(43,170,143,0.5)",
+    borderColor: "rgba(43,170,143,0.3)",
+    badgeColor: "rgba(43,170,143,0.15)",
+    step: "01",
   },
   {
     icon: Wand2,
+    emoji: "✨",
     title: "Pick Your Poses",
     description: "Our artists transform your photo into beautifully illustrated sticker poses.",
-    color: "rgba(236,72,153,0.6)",
+    glowColor: "rgba(232,196,90,0.5)",
+    borderColor: "rgba(232,196,90,0.3)",
+    badgeColor: "rgba(232,196,90,0.12)",
+    step: "02",
   },
   {
     icon: Package,
+    emoji: "📦",
     title: "We Print & Ship",
     description: "Receive your premium die-cut sticker sheet in aesthetic packaging in 3–5 days.",
-    color: "rgba(163,230,53,0.6)",
+    glowColor: "rgba(240,147,106,0.5)",
+    borderColor: "rgba(240,147,106,0.3)",
+    badgeColor: "rgba(240,147,106,0.12)",
+    step: "03",
   },
 ];
 
@@ -27,60 +39,76 @@ export function HowItWorks() {
     <section id="how-it-works" className="py-28">
       <div className="container max-w-6xl mx-auto px-6">
         <div className="text-center mb-16">
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-sm font-bold tracking-[0.2em] uppercase mb-3"
+            style={{ color: "rgba(43,170,143,0.7)" }}
+          >
+            Super simple
+          </motion.p>
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-3xl md:text-5xl font-bold text-white mb-4"
-            style={{ textShadow: "0 0 60px rgba(147,51,234,0.3)" }}
+            className="text-3xl md:text-5xl font-bold mb-4"
+            style={{
+              color: "hsl(43,80%,92%)",
+              textShadow: "0 0 60px rgba(43,170,143,0.3)",
+            }}
           >
-            Magic in 3 Steps
+            Magic in 3 Steps 🪄
           </motion.h2>
-          <p className="text-lg text-white/50">From your camera roll to a physical love letter.</p>
+          <p className="text-lg" style={{ color: "rgba(232,196,90,0.5)" }}>
+            From your camera roll to a physical love letter.
+          </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 relative">
-          {steps.map((step, index) => (
+        <div className="grid md:grid-cols-3 gap-6">
+          {steps.map((step, i) => (
             <motion.div
-              key={index}
-              initial={{ y: 30, opacity: 0 }}
+              key={i}
+              initial={{ y: 36, opacity: 0 }}
               whileInView={{ y: 0, opacity: 1 }}
               viewport={{ once: true }}
-              transition={{ delay: index * 0.15, duration: 0.6 }}
-              whileHover={{ y: -6, transition: { duration: 0.25 } }}
+              transition={{ delay: i * 0.15, duration: 0.6 }}
+              whileHover={{ y: -8, transition: { duration: 0.25 } }}
               className="relative flex flex-col items-center text-center p-8 rounded-3xl overflow-hidden"
               style={{
-                background: "rgba(255,255,255,0.05)",
+                background: "rgba(18,40,55,0.65)",
                 backdropFilter: "blur(24px) saturate(180%)",
                 WebkitBackdropFilter: "blur(24px) saturate(180%)",
-                border: "1px solid rgba(255,255,255,0.10)",
-                boxShadow: "0 4px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.12)",
+                border: `1px solid ${step.borderColor}`,
+                boxShadow: `0 4px 32px rgba(0,0,0,0.35), 0 0 40px ${step.glowColor.replace("0.5", "0.12")}, inset 0 1px 0 rgba(232,196,90,0.12)`,
               }}
             >
               {/* Specular top */}
               <div
                 className="absolute top-0 left-[15%] right-[15%] h-px"
-                style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)" }}
+                style={{ background: `linear-gradient(90deg, transparent, ${step.glowColor.replace("0.5", "0.45")}, transparent)` }}
               />
-              {/* Step glow blob */}
+              {/* Step number badge */}
               <div
-                className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 rounded-full -z-10 opacity-30"
-                style={{ background: `radial-gradient(circle, ${step.color} 0%, transparent 70%)` }}
-              />
-
-              <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6"
+                className="absolute top-5 right-5 text-xs font-black tracking-widest px-2 py-0.5 rounded-full"
                 style={{
-                  background: "rgba(255,255,255,0.08)",
-                  border: "1px solid rgba(255,255,255,0.15)",
-                  boxShadow: `0 0 24px ${step.color.replace("0.6", "0.3")}, inset 0 1px 0 rgba(255,255,255,0.2)`,
-                  color: "white",
+                  background: step.badgeColor,
+                  border: `1px solid ${step.borderColor}`,
+                  color: step.glowColor.replace("0.5", "0.9"),
                 }}
               >
-                <step.icon size={26} />
+                {step.step}
               </div>
-              <h3 className="text-xl font-bold mb-3 text-white">{step.title}</h3>
-              <p className="text-white/50 leading-relaxed">{step.description}</p>
+              {/* Icon */}
+              <motion.div
+                className="text-5xl mb-5"
+                animate={{ y: [0, -6, 0] }}
+                transition={{ duration: 3 + i, repeat: Infinity, ease: "easeInOut", delay: i * 0.5 }}
+              >
+                {step.emoji}
+              </motion.div>
+              <h3 className="text-xl font-bold mb-3" style={{ color: "hsl(43,80%,92%)" }}>{step.title}</h3>
+              <p className="leading-relaxed text-sm" style={{ color: "rgba(232,196,90,0.5)" }}>{step.description}</p>
             </motion.div>
           ))}
         </div>

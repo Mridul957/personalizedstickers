@@ -5,30 +5,12 @@ import heroSticker3 from "@/assets/hero-sticker-3.png";
 import heroSticker4 from "@/assets/hero-sticker-4.png";
 
 const cards = [
-  { img: heroSticker4, rotate: -22, translateY: 28, zIndex: 1, label: "Cuddle" },
-  { img: heroSticker2, rotate: -11, translateY: 10, zIndex: 2, label: "Hug" },
-  { img: heroSticker1, rotate: 0,   translateY: 0,  zIndex: 5, label: "Kiss" },
-  { img: heroSticker3, rotate: 11,  translateY: 10, zIndex: 2, label: "Love" },
-  { img: heroSticker4, rotate: 22,  translateY: 28, zIndex: 1, label: "Together" },
+  { img: heroSticker4, rotate: -22, translateY: 28, zIndex: 1, glowColor: "rgba(232,87,58,0.5)" },
+  { img: heroSticker2, rotate: -11, translateY: 10, zIndex: 2, glowColor: "rgba(240,147,106,0.5)" },
+  { img: heroSticker1, rotate: 0,   translateY: 0,  zIndex: 5, glowColor: "rgba(43,170,143,0.6)" },
+  { img: heroSticker3, rotate: 11,  translateY: 10, zIndex: 2, glowColor: "rgba(232,196,90,0.5)" },
+  { img: heroSticker4, rotate: 22,  translateY: 28, zIndex: 1, glowColor: "rgba(232,87,58,0.4)" },
 ];
-
-const glassBtn = {
-  background: "rgba(255,255,255,0.12)",
-  backdropFilter: "blur(20px) saturate(180%)",
-  WebkitBackdropFilter: "blur(20px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.22)",
-  boxShadow: "0 4px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.25)",
-  color: "white",
-};
-
-const glassOutlineBtn = {
-  background: "rgba(255,255,255,0.04)",
-  backdropFilter: "blur(20px)",
-  WebkitBackdropFilter: "blur(20px)",
-  border: "1px solid rgba(255,255,255,0.14)",
-  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
-  color: "rgba(255,255,255,0.8)",
-};
 
 export function Hero() {
   return (
@@ -36,31 +18,35 @@ export function Hero() {
 
       {/* Badge */}
       <motion.div
-        initial={{ opacity: 0, y: -12 }}
+        initial={{ opacity: 0, y: -14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="mb-5"
       >
         <span
-          className="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-full text-sm font-medium tracking-wide text-white/80"
+          className="inline-flex items-center gap-2 py-2 px-5 rounded-full text-sm font-bold tracking-wide"
           style={{
-            background: "rgba(147,51,234,0.18)",
+            background: "rgba(43,170,143,0.18)",
             backdropFilter: "blur(16px)",
-            border: "1px solid rgba(147,51,234,0.35)",
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15)",
+            border: "1px solid rgba(43,170,143,0.4)",
+            boxShadow: "inset 0 1px 0 rgba(232,196,90,0.2), 0 4px 16px rgba(43,170,143,0.2)",
+            color: "hsl(43,75%,80%)",
           }}
         >
-          ✦ The Ultimate Gift for Your Partner
+          🎉 The Ultimate Gift for Your Partner
         </span>
       </motion.div>
 
       {/* Headline */}
       <motion.h1
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: 0.1 }}
-        className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-bold tracking-tight text-white text-center leading-[1.05] max-w-3xl"
-        style={{ textShadow: "0 0 80px rgba(147,51,234,0.4)" }}
+        className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-bold tracking-tight text-center leading-[1.05] max-w-3xl"
+        style={{
+          color: "hsl(43,80%,92%)",
+          textShadow: "0 0 80px rgba(43,170,143,0.5), 0 0 160px rgba(232,196,90,0.2)",
+        }}
       >
         Turn Your Love<br />Into Stickers 💖
       </motion.h1>
@@ -76,14 +62,14 @@ export function Hero() {
         {cards.map((card, i) => (
           <motion.div
             key={i}
-            initial={{ opacity: 0, y: 40 }}
+            initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.35 + i * 0.06, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.7, delay: 0.35 + i * 0.07, ease: [0.22, 1, 0.36, 1] }}
             whileHover={{
-              y: -22,
-              rotate: card.rotate * 0.25,
+              y: -24,
+              rotate: card.rotate * 0.2,
               zIndex: 20,
-              scale: 1.07,
+              scale: 1.08,
               transition: { duration: 0.25, ease: "easeOut" },
             }}
             style={{
@@ -96,30 +82,26 @@ export function Hero() {
             }}
             className="cursor-pointer flex-shrink-0"
           >
-            {/* Glass card frame */}
+            {/* Glass card frame with per-card color glow */}
             <div
               className="rounded-xl overflow-hidden"
               style={{
                 width: 160,
                 height: 210,
-                background: "rgba(255,255,255,0.10)",
-                backdropFilter: "blur(12px) saturate(150%)",
-                WebkitBackdropFilter: "blur(12px) saturate(150%)",
-                border: "1px solid rgba(255,255,255,0.22)",
-                boxShadow: "0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -1px 0 rgba(0,0,0,0.2)",
-                padding: "6px",
+                background: "rgba(29,58,74,0.55)",
+                backdropFilter: "blur(12px) saturate(180%)",
+                WebkitBackdropFilter: "blur(12px) saturate(180%)",
+                border: "1px solid rgba(43,170,143,0.30)",
+                boxShadow: `0 8px 40px rgba(0,0,0,0.5), 0 0 30px ${card.glowColor}, inset 0 1px 0 rgba(232,196,90,0.25)`,
+                padding: "5px",
               }}
             >
-              <img
-                src={card.img}
-                alt={card.label}
-                className="w-full h-full object-cover rounded-lg"
-              />
+              <img src={card.img} alt="Sticker" className="w-full h-full object-cover rounded-lg" />
             </div>
-            {/* Specular top-edge shine */}
+            {/* Specular top shine */}
             <div
               className="absolute top-0 left-0 right-0 h-px rounded-t-xl pointer-events-none"
-              style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)" }}
+              style={{ background: "linear-gradient(90deg, transparent, rgba(232,196,90,0.5), transparent)" }}
             />
           </motion.div>
         ))}
@@ -130,7 +112,8 @@ export function Hero() {
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: 0.65 }}
-        className="text-base md:text-lg text-white/55 text-center max-w-md leading-relaxed mb-8"
+        className="text-base md:text-lg text-center max-w-md leading-relaxed mb-8"
+        style={{ color: "rgba(232,196,90,0.55)" }}
       >
         Upload your favorite couple photo and create personalized romantic sticker sheets that feel truly yours.
       </motion.p>
@@ -143,18 +126,30 @@ export function Hero() {
         className="flex flex-col sm:flex-row items-center justify-center gap-3"
       >
         <motion.button
-          whileHover={{ scale: 1.05 }}
+          whileHover={{ scale: 1.06, y: -2 }}
           whileTap={{ scale: 0.97 }}
-          className="rounded-full text-base px-9 h-12 font-semibold cursor-pointer"
-          style={glassBtn}
+          className="rounded-full text-base px-9 h-12 font-bold cursor-pointer"
+          style={{
+            background: "linear-gradient(135deg, rgba(43,170,143,0.8), rgba(43,170,143,0.5))",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(43,170,143,0.5)",
+            boxShadow: "0 0 30px rgba(43,170,143,0.4), 0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(232,196,90,0.3)",
+            color: "hsl(43,80%,96%)",
+          }}
         >
-          Select Your Stickers
+          Select Your Stickers 🎨
         </motion.button>
         <motion.button
-          whileHover={{ scale: 1.05 }}
+          whileHover={{ scale: 1.05, y: -2 }}
           whileTap={{ scale: 0.97 }}
-          className="rounded-full text-base px-9 h-12 font-medium cursor-pointer"
-          style={glassOutlineBtn}
+          className="rounded-full text-base px-9 h-12 font-semibold cursor-pointer"
+          style={{
+            background: "rgba(29,58,74,0.45)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(232,196,90,0.25)",
+            boxShadow: "inset 0 1px 0 rgba(232,196,90,0.15)",
+            color: "rgba(232,196,90,0.8)",
+          }}
         >
           View Samples
         </motion.button>

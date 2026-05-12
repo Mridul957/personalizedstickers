@@ -49,6 +49,14 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* ─── Palette ───────────────────────────────────────────
+   Dark teal:  #1D3A4A  hsl(204 43% 20%)
+   Teal:       #2BAA8F  hsl(168 58% 42%)
+   Yellow:     #E8C45A  hsl( 43 75% 63%)
+   Orange:     #F0936A  hsl( 19 82% 67%)
+   Coral:      #E8573A  hsl( 12 77% 56%)
+──────────────────────────────────────────────────────── */
+
 :root {
   --button-outline: rgba(255,255,255, .15);
   --badge-outline: rgba(255,255,255, .08);
@@ -56,67 +64,67 @@
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  /* Deep dark purple background */
-  --background: 252 30% 6%;
-  --foreground: 0 0% 96%;
+  /* Deep ocean teal background */
+  --background: 204 46% 9%;
+  --foreground: 43 80% 92%;
 
-  --border: 260 30% 25%;
+  --border: 168 30% 22%;
 
-  --card: 252 25% 10%;
-  --card-foreground: 0 0% 96%;
-  --card-border: 260 30% 22%;
+  --card: 204 40% 13%;
+  --card-foreground: 43 80% 92%;
+  --card-border: 168 30% 20%;
 
-  --sidebar: 252 25% 10%;
-  --sidebar-foreground: 0 0% 96%;
-  --sidebar-border: 260 30% 22%;
-  --sidebar-primary: 270 80% 70%;
+  --sidebar: 204 40% 13%;
+  --sidebar-foreground: 43 80% 92%;
+  --sidebar-border: 168 30% 20%;
+  --sidebar-primary: 168 58% 42%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 252 25% 15%;
-  --sidebar-accent-foreground: 0 0% 96%;
-  --sidebar-ring: 270 80% 70%;
+  --sidebar-accent: 204 40% 18%;
+  --sidebar-accent-foreground: 43 80% 92%;
+  --sidebar-ring: 43 75% 63%;
 
-  --popover: 252 25% 10%;
-  --popover-foreground: 0 0% 96%;
-  --popover-border: 260 30% 22%;
+  --popover: 204 40% 13%;
+  --popover-foreground: 43 80% 92%;
+  --popover-border: 168 30% 20%;
 
-  /* Primary: bright soft violet */
-  --primary: 270 80% 70%;
-  --primary-foreground: 252 30% 6%;
+  /* Primary: warm teal */
+  --primary: 168 58% 42%;
+  --primary-foreground: 204 46% 9%;
 
-  /* Secondary: rose pink */
-  --secondary: 330 60% 30%;
-  --secondary-foreground: 330 80% 85%;
+  /* Secondary: sunset orange */
+  --secondary: 19 70% 30%;
+  --secondary-foreground: 19 90% 85%;
 
-  /* Accent: neon lime */
-  --accent: 82 100% 65%;
-  --accent-foreground: 252 30% 6%;
+  /* Accent: golden yellow */
+  --accent: 43 85% 63%;
+  --accent-foreground: 204 46% 9%;
 
-  --muted: 252 20% 16%;
-  --muted-foreground: 252 15% 65%;
+  --muted: 204 30% 16%;
+  --muted-foreground: 168 20% 60%;
 
-  --destructive: 0 84% 60%;
+  --destructive: 12 77% 56%;
   --destructive-foreground: 0 0% 100%;
 
-  --input: 252 20% 20%;
-  --ring: 270 80% 70%;
+  --input: 204 30% 20%;
+  --ring: 43 85% 63%;
 
-  --chart-1: 270 80% 70%;
-  --chart-2: 82 100% 65%;
-  --chart-3: 330 60% 70%;
-  --chart-4: 210 80% 65%;
-  --chart-5: 0 0% 96%;
+  --chart-1: 168 58% 42%;
+  --chart-2: 43 85% 63%;
+  --chart-3: 19 82% 67%;
+  --chart-4: 12 77% 56%;
+  --chart-5: 204 46% 9%;
 
   --app-font-sans: 'Inter', sans-serif;
   --app-font-serif: Georgia, serif;
   --app-font-mono: Menlo, monospace;
   --radius: 1rem;
 
-  --shadow-2xs: 0px 2px 8px rgba(0,0,0,0.4);
-  --shadow-xs:  0px 2px 8px rgba(0,0,0,0.4);
-  --shadow-sm:  0px 4px 16px rgba(0,0,0,0.4);
-  --shadow:     0px 4px 24px rgba(0,0,0,0.5);
-  --shadow-md:  0px 8px 32px rgba(0,0,0,0.5);
-  --shadow-lg:  0px 12px 40px rgba(0,0,0,0.6);
+  --shadow-2xs: 0px 2px 8px rgba(0,0,0,0.5);
+  --shadow-xs:  0px 2px 8px rgba(0,0,0,0.5);
+  --shadow-sm:  0px 4px 16px rgba(0,0,0,0.5);
+  --shadow:     0px 4px 24px rgba(0,0,0,0.6);
+  --shadow-md:  0px 8px 32px rgba(0,0,0,0.6);
+  --shadow-lg:  0px 12px 40px rgba(0,0,0,0.65);
   --shadow-xl:  0px 20px 60px rgba(0,0,0,0.7);
   --shadow-2xl: 0px 32px 80px rgba(0,0,0,0.8);
   --tracking-normal: 0em;
@@ -124,70 +132,70 @@
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-  html {
-    color-scheme: dark;
-  }
+  * { @apply border-border; }
+  html { color-scheme: dark; }
   body {
-    @apply font-sans antialiased bg-background text-foreground;
-    background-color: hsl(252, 30%, 6%);
+    @apply font-sans antialiased;
+    background-color: hsl(204, 46%, 9%);
+    color: hsl(43, 80%, 92%);
   }
 }
 
-/* Liquid Glass utility */
+/* ── Liquid Glass utilities ─────────────────────────── */
 .glass {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(43, 170, 143, 0.07);
   backdrop-filter: blur(24px) saturate(200%);
   -webkit-backdrop-filter: blur(24px) saturate(200%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(43, 170, 143, 0.18);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    0 8px 32px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(232,196,90,0.18),
+    inset 0 -1px 0 rgba(0,0,0,0.25);
 }
 
 .glass-strong {
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(43, 170, 143, 0.11);
   backdrop-filter: blur(40px) saturate(220%);
   -webkit-backdrop-filter: blur(40px) saturate(220%);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(43, 170, 143, 0.22);
   box-shadow:
-    0 12px 48px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+    0 12px 48px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(232,196,90,0.22),
+    inset 0 -1px 0 rgba(0,0,0,0.3);
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(43, 170, 143, 0.06);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(43, 170, 143, 0.14);
   box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    0 4px 24px rgba(0,0,0,0.4),
+    inset 0 1px 0 rgba(232,196,90,0.14);
 }
 
-/* Glowing blob animation */
+/* ── Blob animations ─────────────────────────────────── */
 @keyframes blob-drift {
-  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  0%, 100% { transform: translate(0, 0) scale(1); }
   33%       { transform: translate(30px, -50px) scale(1.1); }
   66%       { transform: translate(-20px, 20px) scale(0.95); }
 }
-
 @keyframes blob-drift-2 {
-  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  0%, 100% { transform: translate(0, 0) scale(1); }
   33%       { transform: translate(-40px, 30px) scale(1.08); }
   66%       { transform: translate(25px, -35px) scale(0.92); }
 }
-
 @keyframes blob-drift-3 {
-  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  0%, 100% { transform: translate(0, 0) scale(1); }
   50%       { transform: translate(20px, 40px) scale(1.05); }
+}
+@keyframes float-y {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-12px); }
 }
 
 .blob-1 { animation: blob-drift   18s ease-in-out infinite; }
 .blob-2 { animation: blob-drift-2 22s ease-in-out infinite; }
 .blob-3 { animation: blob-drift-3 26s ease-in-out infinite; }
 .blob-4 { animation: blob-drift   20s ease-in-out infinite reverse; }
+.float  { animation: float-y       6s ease-in-out infinite; }
