@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 export function Navbar() {
   return (
@@ -26,20 +26,22 @@ export function Navbar() {
         <a href="#reviews" className="hover:text-[hsl(43,80%,92%)] transition-colors duration-200">Reviews</a>
       </div>
 
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.96 }}
-        className="rounded-full font-bold px-6 text-sm h-9 cursor-pointer"
-        style={{
-          background: "linear-gradient(135deg, rgba(43,170,143,0.7), rgba(29,58,74,0.8))",
-          backdropFilter: "blur(12px)",
-          border: "1px solid rgba(43,170,143,0.45)",
-          boxShadow: "inset 0 1px 0 rgba(232,196,90,0.25), 0 4px 16px rgba(43,170,143,0.25)",
-          color: "hsl(43,80%,92%)",
-        }}
-      >
-        Create Yours ✦
-      </motion.button>
+      <Link href="/create">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.96 }}
+          className="rounded-full font-bold px-6 text-sm h-9 cursor-pointer"
+          style={{
+            background: "linear-gradient(135deg, rgba(43,170,143,0.7), rgba(29,58,74,0.8))",
+            backdropFilter: "blur(12px)",
+            border: "1px solid rgba(43,170,143,0.45)",
+            boxShadow: "inset 0 1px 0 rgba(232,196,90,0.25), 0 4px 16px rgba(43,170,143,0.25)",
+            color: "hsl(43,80%,92%)",
+          }}
+        >
+          Create Yours ✦
+        </motion.button>
+      </Link>
     </motion.nav>
   );
 }

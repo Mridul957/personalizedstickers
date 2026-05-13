@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link } from "wouter";
 
 const sparkles = Array.from({ length: 28 }, (_, i) => ({
   id: i,
@@ -102,20 +103,22 @@ export function CinematicConversion() {
               Choose your favorite 7 sticker poses
             </p>
 
-            <motion.button
-              whileHover={{ scale: 1.07, y: -3 }}
-              whileTap={{ scale: 0.96 }}
-              className="rounded-full text-lg px-10 h-14 font-bold cursor-pointer"
-              style={{
-                background: "linear-gradient(135deg, rgba(232,196,90,0.9), rgba(240,147,106,0.85))",
-                backdropFilter: "blur(12px)",
-                border: "1px solid rgba(232,196,90,0.4)",
-                boxShadow: "0 0 40px rgba(232,196,90,0.4), 0 8px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.25)",
-                color: "hsl(204,46%,12%)",
-              }}
-            >
-              Start Creating →
-            </motion.button>
+            <Link href="/create">
+              <motion.button
+                whileHover={{ scale: 1.07, y: -3 }}
+                whileTap={{ scale: 0.96 }}
+                className="rounded-full text-lg px-10 h-14 font-bold cursor-pointer"
+                style={{
+                  background: "linear-gradient(135deg, rgba(232,196,90,0.9), rgba(240,147,106,0.85))",
+                  backdropFilter: "blur(12px)",
+                  border: "1px solid rgba(232,196,90,0.4)",
+                  boxShadow: "0 0 40px rgba(232,196,90,0.4), 0 8px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.25)",
+                  color: "hsl(204,46%,12%)",
+                }}
+              >
+                Start Creating →
+              </motion.button>
+            </Link>
           </div>
         </motion.div>
       </motion.div>
