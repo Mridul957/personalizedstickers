@@ -1,35 +1,61 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "wouter";
-import heroSticker1 from "@/assets/hero-sticker-1.png";
-import heroSticker2 from "@/assets/hero-sticker-2.png";
-import heroSticker3 from "@/assets/hero-sticker-3.png";
-import heroSticker4 from "@/assets/hero-sticker-4.png";
-import sticker5 from "@/assets/sticker-5.png";
-import sticker6 from "@/assets/sticker-6.png";
-import gallery1 from "@/assets/gallery-1.png";
-import gallery2 from "@/assets/gallery-2.png";
 
-const MAX_SELECT = 7;
+const MIN_SELECT = 7;
+const MAX_SELECT = 14;
 
-const ALL_STICKERS = [
-  { id: 1, img: heroSticker1, name: "The Kiss",        tag: "Romance" },
-  { id: 2, img: heroSticker2, name: "Hand in Hand",    tag: "Classic" },
-  { id: 3, img: heroSticker3, name: "Warm Hug",        tag: "Cozy" },
-  { id: 4, img: heroSticker4, name: "Sweet Smile",     tag: "Cute" },
-  { id: 5, img: sticker5,     name: "Dance Together",  tag: "Playful" },
-  { id: 6, img: sticker6,     name: "Rainy Day",       tag: "Cozy" },
-  { id: 7, img: gallery1,     name: "Love Story",      tag: "Romantic" },
-  { id: 8, img: gallery2,     name: "Together Always", tag: "Classic" },
+type Tag = "Romance" | "Cozy" | "Cute" | "Playful" | "Emotional" | "Classic" | "Trending" | "Soft Love";
+
+interface Sticker {
+  id: number;
+  name: string;
+  tag: Tag;
+  emoji: string;
+}
+
+const ALL_STICKERS: Sticker[] = [
+  { id: 1,  name: "The First Kiss",      tag: "Romance",   emoji: "💋" },
+  { id: 2,  name: "Forever Hug",         tag: "Cozy",      emoji: "🤗" },
+  { id: 3,  name: "Sleepy Together",     tag: "Soft Love", emoji: "😴" },
+  { id: 4,  name: "Late Night Calls",    tag: "Emotional", emoji: "🌙" },
+  { id: 5,  name: "Matching Hoodies",    tag: "Cute",      emoji: "👫" },
+  { id: 6,  name: "Coffee Date",         tag: "Classic",   emoji: "☕" },
+  { id: 7,  name: "Holding Hands",       tag: "Classic",   emoji: "🤝" },
+  { id: 8,  name: "Movie Night",         tag: "Cozy",      emoji: "🎬" },
+  { id: 9,  name: "Forever Yours",       tag: "Romance",   emoji: "💍" },
+  { id: 10, name: "Cute Fight",          tag: "Playful",   emoji: "🥊" },
+  { id: 11, name: "Rainy Walk",          tag: "Emotional", emoji: "☂️" },
+  { id: 12, name: "Long Distance Love",  tag: "Emotional", emoji: "✈️" },
+  { id: 13, name: "Soft Smile",          tag: "Soft Love", emoji: "🥰" },
+  { id: 14, name: "Together Always",     tag: "Classic",   emoji: "♾️" },
+  { id: 15, name: "Dance Together",      tag: "Playful",   emoji: "💃" },
+  { id: 16, name: "Blushing Love",       tag: "Romance",   emoji: "😊" },
+  { id: 17, name: "Lazy Sunday",         tag: "Cozy",      emoji: "🛋️" },
+  { id: 18, name: "Heart Hands",         tag: "Cute",      emoji: "🫶" },
+  { id: 19, name: "Ice Cream Date",      tag: "Cute",      emoji: "🍦" },
+  { id: 20, name: "Cozy Moments",        tag: "Cozy",      emoji: "🧣" },
+  { id: 21, name: "Stolen Glances",      tag: "Romance",   emoji: "👀" },
+  { id: 22, name: "Good Morning Kiss",   tag: "Soft Love", emoji: "🌅" },
+  { id: 23, name: "Stargazing Night",    tag: "Emotional", emoji: "🌟" },
+  { id: 24, name: "Pinky Promise",       tag: "Cute",      emoji: "🤙" },
+  { id: 25, name: "Reading Together",    tag: "Cozy",      emoji: "📖" },
+  { id: 26, name: "Beach Walk",          tag: "Classic",   emoji: "🌊" },
+  { id: 27, name: "Surprise Hug",        tag: "Playful",   emoji: "🎁" },
+  { id: 28, name: "Matching Outfits",    tag: "Trending",  emoji: "👗" },
+  { id: 29, name: "Selfie Time",         tag: "Trending",  emoji: "🤳" },
+  { id: 30, name: "Forever & Always",    tag: "Emotional", emoji: "💞" },
 ];
 
-const tagColors: Record<string, { bg: string; text: string; border: string }> = {
-  Romance:  { bg: "rgba(232,87,58,0.15)",   text: "rgba(232,87,58,0.9)",   border: "rgba(232,87,58,0.3)"  },
-  Classic:  { bg: "rgba(43,170,143,0.15)",  text: "rgba(43,170,143,0.9)",  border: "rgba(43,170,143,0.3)" },
-  Cozy:     { bg: "rgba(240,147,106,0.15)", text: "rgba(240,147,106,0.9)", border: "rgba(240,147,106,0.3)"},
-  Cute:     { bg: "rgba(232,196,90,0.15)",  text: "rgba(232,196,90,0.9)",  border: "rgba(232,196,90,0.3)" },
-  Playful:  { bg: "rgba(43,170,143,0.15)",  text: "rgba(43,170,143,0.9)",  border: "rgba(43,170,143,0.3)" },
-  Romantic: { bg: "rgba(232,87,58,0.15)",   text: "rgba(232,87,58,0.9)",   border: "rgba(232,87,58,0.3)"  },
+const TAG_STYLES: Record<Tag, { bg: string; text: string; border: string }> = {
+  Romance:   { bg: "rgba(232,87,58,0.15)",   text: "rgba(232,87,58,0.95)",   border: "rgba(232,87,58,0.3)"  },
+  Cozy:      { bg: "rgba(240,147,106,0.15)", text: "rgba(240,147,106,0.95)", border: "rgba(240,147,106,0.3)"},
+  Cute:      { bg: "rgba(232,196,90,0.15)",  text: "rgba(232,196,90,0.95)",  border: "rgba(232,196,90,0.3)" },
+  Playful:   { bg: "rgba(43,170,143,0.15)",  text: "rgba(43,170,143,0.95)",  border: "rgba(43,170,143,0.3)" },
+  Emotional: { bg: "rgba(139,92,246,0.15)",  text: "rgba(167,139,250,0.95)", border: "rgba(139,92,246,0.3)" },
+  Classic:   { bg: "rgba(99,179,237,0.15)",  text: "rgba(147,210,255,0.95)", border: "rgba(99,179,237,0.3)" },
+  Trending:  { bg: "rgba(236,72,153,0.15)",  text: "rgba(251,113,183,0.95)", border: "rgba(236,72,153,0.3)" },
+  "Soft Love":{ bg:"rgba(248,113,113,0.15)", text:"rgba(252,165,165,0.95)",  border:"rgba(248,113,113,0.3)" },
 };
 
 export default function CreateYours() {
@@ -37,10 +63,15 @@ export default function CreateYours() {
   const [shakeId, setShakeId] = useState<number | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
+  const filled = selected.length;
+  const pct = (filled / MAX_SELECT) * 100;
+  const atMin = filled >= MIN_SELECT;
+  const atMax = filled >= MAX_SELECT;
+
   function toggle(id: number) {
     if (selected.includes(id)) {
       setSelected((prev) => prev.filter((s) => s !== id));
-    } else if (selected.length >= MAX_SELECT) {
+    } else if (atMax) {
       setShakeId(id);
       setTimeout(() => setShakeId(null), 600);
     } else {
@@ -49,32 +80,28 @@ export default function CreateYours() {
   }
 
   function handleOrder() {
-    if (selected.length === MAX_SELECT) setShowSuccess(true);
+    if (atMin) setShowSuccess(true);
   }
 
-  const filled = selected.length;
-  const pct = (filled / MAX_SELECT) * 100;
-
   return (
-    <div
-      className="min-h-screen pb-40"
-      style={{ background: "hsl(204,46%,9%)" }}
-    >
+    <div className="min-h-screen pb-44" style={{ background: "hsl(204,46%,9%)" }}>
       {/* Ambient blobs */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
-        <div className="blob-1 absolute top-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full opacity-25"
+        <div className="blob-1 absolute top-[-10%] left-[-5%] w-[600px] h-[600px] rounded-full opacity-25"
           style={{ background: "radial-gradient(circle, rgba(43,170,143,0.6) 0%, transparent 70%)" }} />
-        <div className="blob-2 absolute bottom-[10%] right-[-5%] w-[500px] h-[500px] rounded-full opacity-20"
+        <div className="blob-2 absolute bottom-[5%] right-[-8%] w-[560px] h-[560px] rounded-full opacity-20"
           style={{ background: "radial-gradient(circle, rgba(232,196,90,0.5) 0%, transparent 70%)" }} />
-        <div className="blob-3 absolute top-[50%] right-[20%] w-[400px] h-[400px] rounded-full opacity-15"
+        <div className="blob-3 absolute top-[55%] left-[20%] w-[420px] h-[420px] rounded-full opacity-15"
           style={{ background: "radial-gradient(circle, rgba(240,147,106,0.5) 0%, transparent 70%)" }} />
+        <div className="blob-4 absolute top-[20%] right-[15%] w-[380px] h-[380px] rounded-full opacity-15"
+          style={{ background: "radial-gradient(circle, rgba(139,92,246,0.4) 0%, transparent 70%)" }} />
       </div>
 
-      {/* Top nav */}
+      {/* Sticky top nav */}
       <div
         className="sticky top-0 z-40 px-6 py-4 flex items-center justify-between"
         style={{
-          background: "rgba(12,28,38,0.80)",
+          background: "rgba(12,28,38,0.82)",
           backdropFilter: "blur(28px) saturate(180%)",
           WebkitBackdropFilter: "blur(28px) saturate(180%)",
           borderBottom: "1px solid rgba(43,170,143,0.15)",
@@ -83,7 +110,7 @@ export default function CreateYours() {
       >
         <Link href="/">
           <motion.button
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.05, x: -2 }}
             whileTap={{ scale: 0.95 }}
             className="flex items-center gap-2 text-sm font-semibold cursor-pointer"
             style={{ color: "rgba(43,170,143,0.8)" }}
@@ -96,129 +123,248 @@ export default function CreateYours() {
           Ours. 💖
         </span>
 
-        {/* Progress pill */}
-        <div
+        {/* Counter pill */}
+        <motion.div
+          layout
           className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold"
           style={{
-            background: "rgba(29,58,74,0.6)",
-            border: "1px solid rgba(43,170,143,0.25)",
-            color: filled === MAX_SELECT ? "rgba(43,170,143,0.9)" : "hsl(43,80%,85%)",
+            background: atMax
+              ? "rgba(43,170,143,0.2)"
+              : atMin
+                ? "rgba(43,170,143,0.12)"
+                : "rgba(29,58,74,0.6)",
+            border: atMin
+              ? "1px solid rgba(43,170,143,0.4)"
+              : "1px solid rgba(43,170,143,0.2)",
+            color: atMax
+              ? "rgba(43,170,143,1)"
+              : atMin
+                ? "rgba(43,170,143,0.85)"
+                : "hsl(43,80%,75%)",
           }}
         >
-          {filled === MAX_SELECT ? "✓ All 7 Selected!" : `${filled} / ${MAX_SELECT} selected`}
-        </div>
+          {atMax ? "✨ Pack Complete!" : `${filled} / ${MAX_SELECT} selected`}
+        </motion.div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 pt-10 pb-6">
+      <div className="max-w-6xl mx-auto px-4 pt-10 pb-6">
         {/* Page header */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-10"
+          transition={{ duration: 0.6 }}
+          className="text-center mb-12"
         >
-          <h1
-            className="text-3xl md:text-5xl font-bold mb-3"
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1, duration: 0.5 }}
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-5"
             style={{
-              color: "hsl(43,80%,92%)",
-              textShadow: "0 0 60px rgba(43,170,143,0.4)",
+              background: "rgba(232,87,58,0.12)",
+              border: "1px solid rgba(232,87,58,0.25)",
+              color: "rgba(232,87,58,0.85)",
             }}
           >
-            Pick Your 7 Poses 🎨
+            ✦ Personalized just for you
+          </motion.div>
+
+          <h1
+            className="text-4xl md:text-6xl font-black mb-4 leading-tight"
+            style={{
+              color: "hsl(43,80%,92%)",
+              textShadow: "0 0 80px rgba(43,170,143,0.35)",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Build Your Love<br />
+            <span style={{
+              background: "linear-gradient(135deg, rgba(232,196,90,0.95), rgba(240,147,106,0.9), rgba(232,87,58,0.85))",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}>
+              Sticker Pack ✨
+            </span>
           </h1>
-          <p className="text-base" style={{ color: "rgba(232,196,90,0.55)" }}>
-            Choose exactly 7 sticker illustrations for your personalized sheet.
+
+          <p className="text-base md:text-lg max-w-xl mx-auto mb-2" style={{ color: "rgba(232,196,90,0.5)" }}>
+            Choose your favorite moments together and create a personalized sticker sheet made just for your relationship.
+          </p>
+          <p className="text-sm font-medium" style={{ color: "rgba(43,170,143,0.55)" }}>
+            Minimum 7 selections required · Maximum 14 stickers
           </p>
 
           {/* Progress bar */}
-          <div className="mt-6 max-w-sm mx-auto">
+          <div className="mt-7 max-w-md mx-auto">
+            <div className="flex justify-between text-xs font-semibold mb-2" style={{ color: "rgba(43,170,143,0.6)" }}>
+              <span>{filled} selected</span>
+              <span>{MAX_SELECT} max</span>
+            </div>
             <div
-              className="h-2 rounded-full overflow-hidden"
-              style={{ background: "rgba(43,170,143,0.12)", border: "1px solid rgba(43,170,143,0.15)" }}
+              className="h-2.5 rounded-full overflow-hidden"
+              style={{ background: "rgba(43,170,143,0.10)", border: "1px solid rgba(43,170,143,0.12)" }}
             >
               <motion.div
                 className="h-full rounded-full"
                 animate={{ width: `${pct}%` }}
-                transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                transition={{ type: "spring", stiffness: 200, damping: 22 }}
                 style={{
-                  background: pct === 100
-                    ? "linear-gradient(90deg, rgba(43,170,143,0.9), rgba(232,196,90,0.9))"
-                    : "linear-gradient(90deg, rgba(43,170,143,0.7), rgba(43,170,143,0.5))",
+                  background: atMax
+                    ? "linear-gradient(90deg, rgba(43,170,143,0.95), rgba(232,196,90,0.9), rgba(240,147,106,0.85))"
+                    : atMin
+                      ? "linear-gradient(90deg, rgba(43,170,143,0.85), rgba(232,196,90,0.7))"
+                      : "linear-gradient(90deg, rgba(43,170,143,0.7), rgba(43,170,143,0.5))",
+                  boxShadow: atMin ? "0 0 12px rgba(43,170,143,0.4)" : "none",
                 }}
               />
             </div>
-            <div className="flex justify-between mt-1.5 text-xs" style={{ color: "rgba(43,170,143,0.5)" }}>
-              <span>0</span>
-              <span>7</span>
+            {/* Milestone markers */}
+            <div className="relative mt-1">
+              <div className="absolute" style={{ left: `${(7 / 14) * 100}%`, transform: "translateX(-50%)" }}>
+                <div className="w-0.5 h-2 mx-auto" style={{ background: "rgba(43,170,143,0.4)" }} />
+                <span className="text-[10px] block text-center" style={{ color: "rgba(43,170,143,0.5)" }}>min</span>
+              </div>
             </div>
           </div>
+
+          {/* Encouragement message */}
+          <AnimatePresence>
+            {atMin && !atMax && (
+              <motion.div
+                initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                className="mt-4 inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold"
+                style={{
+                  background: "rgba(43,170,143,0.12)",
+                  border: "1px solid rgba(43,170,143,0.28)",
+                  color: "rgba(43,170,143,0.9)",
+                  boxShadow: "0 0 20px rgba(43,170,143,0.15)",
+                }}
+              >
+                💖 Want more cute moments? Add up to {MAX_SELECT - filled} more stickers!
+              </motion.div>
+            )}
+            {atMax && (
+              <motion.div
+                initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                className="mt-4 inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold"
+                style={{
+                  background: "linear-gradient(135deg, rgba(43,170,143,0.2), rgba(232,196,90,0.15))",
+                  border: "1px solid rgba(232,196,90,0.35)",
+                  color: "rgba(232,196,90,0.9)",
+                  boxShadow: "0 0 24px rgba(232,196,90,0.15)",
+                }}
+              >
+                ✨ Your sticker pack is complete!
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         {/* Sticker grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
           {ALL_STICKERS.map((sticker, i) => {
             const isSelected = selected.includes(sticker.id);
             const selOrder = selected.indexOf(sticker.id) + 1;
-            const tag = tagColors[sticker.tag] ?? tagColors["Classic"];
+            const tag = TAG_STYLES[sticker.tag];
+            const isLocked = !isSelected && atMax;
 
             return (
               <motion.div
                 key={sticker.id}
-                initial={{ opacity: 0, y: 24 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={
                   shakeId === sticker.id
-                    ? { x: [-8, 8, -6, 6, -3, 3, 0], opacity: 1 }
+                    ? { x: [-8, 8, -6, 6, -3, 3, 0], opacity: 1, y: 0 }
                     : { opacity: 1, y: 0, x: 0 }
                 }
                 transition={
                   shakeId === sticker.id
-                    ? { duration: 0.5, ease: "easeInOut" }
-                    : { delay: i * 0.06, duration: 0.5 }
+                    ? { duration: 0.5 }
+                    : { delay: i * 0.03, duration: 0.45 }
                 }
-                whileHover={{ y: -6, scale: 1.03, transition: { duration: 0.2 } }}
+                whileHover={!isLocked ? { y: -8, scale: 1.04, transition: { duration: 0.18 } } : {}}
                 onClick={() => toggle(sticker.id)}
-                className="relative cursor-pointer rounded-2xl overflow-hidden"
+                className="relative cursor-pointer rounded-2xl overflow-hidden group"
                 style={{
-                  background: isSelected ? "rgba(43,170,143,0.14)" : "rgba(18,40,55,0.65)",
+                  background: isSelected
+                    ? "rgba(43,170,143,0.13)"
+                    : "rgba(16,36,50,0.7)",
                   backdropFilter: "blur(20px) saturate(180%)",
                   WebkitBackdropFilter: "blur(20px) saturate(180%)",
                   border: isSelected
-                    ? "2px solid rgba(43,170,143,0.6)"
-                    : "1px solid rgba(43,170,143,0.15)",
+                    ? "2px solid rgba(43,170,143,0.65)"
+                    : "1px solid rgba(43,170,143,0.13)",
                   boxShadow: isSelected
-                    ? "0 0 30px rgba(43,170,143,0.25), 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(232,196,90,0.15)"
-                    : "0 4px 20px rgba(0,0,0,0.35), inset 0 1px 0 rgba(232,196,90,0.08)",
+                    ? "0 0 28px rgba(43,170,143,0.3), 0 8px 28px rgba(0,0,0,0.4), inset 0 1px 0 rgba(232,196,90,0.15)"
+                    : "0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(232,196,90,0.07)",
+                  transition: "border-color 0.2s, box-shadow 0.2s, background 0.2s",
                 }}
               >
-                {/* Specular top */}
+                {/* Specular line */}
                 <div
                   className="absolute top-0 left-[10%] right-[10%] h-px z-10"
                   style={{
                     background: isSelected
-                      ? "linear-gradient(90deg, transparent, rgba(43,170,143,0.5), transparent)"
-                      : "linear-gradient(90deg, transparent, rgba(232,196,90,0.2), transparent)",
+                      ? "linear-gradient(90deg, transparent, rgba(43,170,143,0.6), transparent)"
+                      : "linear-gradient(90deg, transparent, rgba(232,196,90,0.18), transparent)",
                   }}
                 />
 
-                {/* Image */}
-                <div className="aspect-square p-3">
-                  <img
-                    src={sticker.img}
-                    alt={sticker.name}
-                    className="w-full h-full object-cover rounded-xl"
-                    draggable={false}
+                {/* Hover glow */}
+                {!isLocked && (
+                  <div
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                    style={{
+                      background: "radial-gradient(circle at 50% 30%, rgba(43,170,143,0.12) 0%, transparent 70%)",
+                    }}
                   />
+                )}
+
+                {/* Illustration area */}
+                <div
+                  className="aspect-square flex items-center justify-center relative"
+                  style={{
+                    background: isSelected
+                      ? "rgba(43,170,143,0.08)"
+                      : "rgba(29,58,74,0.35)",
+                    margin: "10px 10px 0 10px",
+                    borderRadius: "14px",
+                  }}
+                >
+                  {/* Pulsing ring on selected */}
+                  {isSelected && (
+                    <motion.div
+                      className="absolute inset-0 rounded-[14px]"
+                      animate={{ opacity: [0.5, 0.15, 0.5] }}
+                      transition={{ repeat: Infinity, duration: 2.5 }}
+                      style={{ border: "1px solid rgba(43,170,143,0.5)" }}
+                    />
+                  )}
+
+                  <motion.span
+                    className="text-4xl select-none"
+                    animate={isSelected ? { scale: [1, 1.15, 1] } : { scale: 1 }}
+                    transition={isSelected ? { duration: 0.4 } : {}}
+                  >
+                    {sticker.emoji}
+                  </motion.span>
                 </div>
 
                 {/* Card footer */}
-                <div className="px-3 pb-3">
+                <div className="px-3 py-3">
                   <p
-                    className="text-sm font-bold mb-1.5 truncate"
-                    style={{ color: "hsl(43,80%,90%)" }}
+                    className="text-xs font-bold mb-1.5 truncate"
+                    style={{ color: isSelected ? "hsl(43,80%,96%)" : "hsl(43,80%,82%)" }}
                   >
                     {sticker.name}
                   </p>
                   <span
-                    className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full"
+                    className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full"
                     style={{
                       background: tag.bg,
                       color: tag.text,
@@ -229,14 +375,15 @@ export default function CreateYours() {
                   </span>
                 </div>
 
-                {/* Selection overlay + badge */}
+                {/* Selection badge */}
                 <AnimatePresence>
                   {isSelected && (
                     <motion.div
-                      initial={{ opacity: 0, scale: 0.5 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.5 }}
-                      className="absolute top-2.5 right-2.5 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black"
+                      initial={{ opacity: 0, scale: 0.4, rotate: -20 }}
+                      animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                      exit={{ opacity: 0, scale: 0.4 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                      className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black"
                       style={{
                         background: "rgba(43,170,143,0.95)",
                         boxShadow: "0 2px 12px rgba(43,170,143,0.5)",
@@ -248,13 +395,13 @@ export default function CreateYours() {
                   )}
                 </AnimatePresence>
 
-                {/* Locked overlay when max reached and not selected */}
-                {!isSelected && filled >= MAX_SELECT && (
+                {/* Locked overlay */}
+                {isLocked && (
                   <div
                     className="absolute inset-0 rounded-2xl flex items-center justify-center"
-                    style={{ background: "rgba(12,28,38,0.55)" }}
+                    style={{ background: "rgba(8,20,28,0.6)", backdropFilter: "blur(2px)" }}
                   >
-                    <span className="text-2xl">🔒</span>
+                    <span className="text-xl opacity-60">🔒</span>
                   </div>
                 )}
               </motion.div>
@@ -271,70 +418,105 @@ export default function CreateYours() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 28 }}
-            className="fixed bottom-0 left-0 right-0 z-50 px-4 py-4"
+            className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-4 pt-2"
           >
             <div
-              className="max-w-2xl mx-auto rounded-2xl px-5 py-4 flex items-center gap-4"
+              className="max-w-2xl mx-auto rounded-2xl px-5 py-4"
               style={{
-                background: "rgba(12,28,38,0.88)",
-                backdropFilter: "blur(32px) saturate(180%)",
-                WebkitBackdropFilter: "blur(32px) saturate(180%)",
-                border: "1px solid rgba(43,170,143,0.28)",
-                boxShadow: "0 -4px 40px rgba(0,0,0,0.5), 0 0 30px rgba(43,170,143,0.12), inset 0 1px 0 rgba(232,196,90,0.12)",
+                background: "rgba(10,24,34,0.92)",
+                backdropFilter: "blur(36px) saturate(200%)",
+                WebkitBackdropFilter: "blur(36px) saturate(200%)",
+                border: "1px solid rgba(43,170,143,0.3)",
+                boxShadow: "0 -4px 40px rgba(0,0,0,0.5), 0 0 40px rgba(43,170,143,0.12), inset 0 1px 0 rgba(232,196,90,0.12)",
               }}
             >
-              {/* Selected thumbnails */}
-              <div className="flex -space-x-2 flex-1 min-w-0">
-                {selected.map((id) => {
-                  const s = ALL_STICKERS.find((st) => st.id === id)!;
-                  return (
-                    <motion.img
-                      key={id}
-                      layoutId={`thumb-${id}`}
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      src={s.img}
-                      alt={s.name}
-                      className="w-10 h-10 rounded-full border-2 object-cover flex-shrink-0"
-                      style={{ borderColor: "rgba(43,170,143,0.6)" }}
-                    />
-                  );
-                })}
-                {filled < MAX_SELECT && (
-                  <div
-                    className="w-10 h-10 rounded-full border-2 border-dashed flex items-center justify-center text-xs flex-shrink-0"
-                    style={{ borderColor: "rgba(43,170,143,0.3)", color: "rgba(43,170,143,0.5)" }}
-                  >
-                    +{MAX_SELECT - filled}
-                  </div>
-                )}
+              {/* Mini progress */}
+              <div className="h-1 rounded-full mb-3 overflow-hidden" style={{ background: "rgba(43,170,143,0.1)" }}>
+                <motion.div
+                  className="h-full rounded-full"
+                  animate={{ width: `${pct}%` }}
+                  transition={{ type: "spring", stiffness: 200, damping: 22 }}
+                  style={{
+                    background: atMax
+                      ? "linear-gradient(90deg, rgba(43,170,143,0.9), rgba(232,196,90,0.9))"
+                      : "rgba(43,170,143,0.7)",
+                  }}
+                />
               </div>
 
-              {/* CTA */}
-              <motion.button
-                onClick={handleOrder}
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.97 }}
-                disabled={filled < MAX_SELECT}
-                className="rounded-full px-7 h-11 text-sm font-bold cursor-pointer flex-shrink-0 transition-all duration-300"
-                style={
-                  filled === MAX_SELECT
-                    ? {
-                        background: "linear-gradient(135deg, rgba(43,170,143,0.9), rgba(232,196,90,0.85))",
-                        border: "1px solid rgba(232,196,90,0.4)",
-                        boxShadow: "0 0 30px rgba(43,170,143,0.4), inset 0 1px 0 rgba(255,255,255,0.2)",
-                        color: "hsl(204,46%,9%)",
-                      }
-                    : {
-                        background: "rgba(43,170,143,0.12)",
-                        border: "1px solid rgba(43,170,143,0.2)",
-                        color: "rgba(43,170,143,0.45)",
-                        cursor: "not-allowed",
-                      }
-                }
-              >
-                {filled === MAX_SELECT ? "Order My Sheet →" : `Pick ${MAX_SELECT - filled} more`}
-              </motion.button>
+              <div className="flex items-center gap-3">
+                {/* Thumbnails */}
+                <div className="flex -space-x-2 flex-1 min-w-0 overflow-hidden">
+                  {selected.slice(0, 10).map((id) => {
+                    const s = ALL_STICKERS.find((st) => st.id === id)!;
+                    return (
+                      <motion.div
+                        key={id}
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="w-9 h-9 rounded-full border-2 flex items-center justify-center text-lg flex-shrink-0"
+                        style={{
+                          background: "rgba(29,58,74,0.8)",
+                          borderColor: "rgba(43,170,143,0.5)",
+                        }}
+                      >
+                        {s.emoji}
+                      </motion.div>
+                    );
+                  })}
+                  {filled > 10 && (
+                    <div
+                      className="w-9 h-9 rounded-full border-2 flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                      style={{
+                        background: "rgba(29,58,74,0.8)",
+                        borderColor: "rgba(43,170,143,0.35)",
+                        color: "rgba(43,170,143,0.8)",
+                      }}
+                    >
+                      +{filled - 10}
+                    </div>
+                  )}
+                  {filled < MAX_SELECT && (
+                    <div
+                      className="w-9 h-9 rounded-full border-2 border-dashed flex items-center justify-center text-[10px] font-semibold flex-shrink-0"
+                      style={{
+                        borderColor: "rgba(43,170,143,0.25)",
+                        color: "rgba(43,170,143,0.4)",
+                      }}
+                    >
+                      {filled < MIN_SELECT ? `${MIN_SELECT - filled}↑` : `+${MAX_SELECT - filled}`}
+                    </div>
+                  )}
+                </div>
+
+                {/* CTA button */}
+                <motion.button
+                  onClick={handleOrder}
+                  whileHover={atMin ? { scale: 1.05 } : {}}
+                  whileTap={atMin ? { scale: 0.97 } : {}}
+                  disabled={!atMin}
+                  className="rounded-full px-7 h-11 text-sm font-bold cursor-pointer flex-shrink-0 transition-all duration-300"
+                  style={
+                    atMin
+                      ? {
+                          background: "linear-gradient(135deg, rgba(43,170,143,0.9), rgba(232,196,90,0.85))",
+                          border: "1px solid rgba(232,196,90,0.4)",
+                          boxShadow: "0 0 28px rgba(43,170,143,0.4), inset 0 1px 0 rgba(255,255,255,0.2)",
+                          color: "hsl(204,46%,9%)",
+                        }
+                      : {
+                          background: "rgba(43,170,143,0.1)",
+                          border: "1px solid rgba(43,170,143,0.18)",
+                          color: "rgba(43,170,143,0.35)",
+                          cursor: "not-allowed",
+                        }
+                  }
+                >
+                  {atMin
+                    ? "Order My Sheet →"
+                    : `${MIN_SELECT - filled} more to go`}
+                </motion.button>
+              </div>
             </div>
           </motion.div>
         )}
@@ -348,21 +530,21 @@ export default function CreateYours() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-6"
-            style={{ background: "rgba(8,20,28,0.85)", backdropFilter: "blur(12px)" }}
+            style={{ background: "rgba(6,16,24,0.88)", backdropFilter: "blur(16px)" }}
             onClick={() => setShowSuccess(false)}
           >
             <motion.div
-              initial={{ scale: 0.8, y: 30 }}
+              initial={{ scale: 0.8, y: 32 }}
               animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.8, y: 30 }}
+              exit={{ scale: 0.8, y: 32 }}
               transition={{ type: "spring", stiffness: 300, damping: 24 }}
               onClick={(e) => e.stopPropagation()}
               className="relative text-center p-10 rounded-3xl max-w-sm w-full"
               style={{
-                background: "rgba(18,40,55,0.95)",
+                background: "rgba(16,36,50,0.98)",
                 backdropFilter: "blur(40px)",
                 border: "1px solid rgba(43,170,143,0.3)",
-                boxShadow: "0 24px 80px rgba(0,0,0,0.6), 0 0 60px rgba(43,170,143,0.2), inset 0 1px 0 rgba(232,196,90,0.2)",
+                boxShadow: "0 32px 80px rgba(0,0,0,0.65), 0 0 60px rgba(43,170,143,0.2), inset 0 1px 0 rgba(232,196,90,0.18)",
               }}
             >
               <div
@@ -370,34 +552,40 @@ export default function CreateYours() {
                 style={{ background: "linear-gradient(90deg, transparent, rgba(232,196,90,0.5), transparent)" }}
               />
               <motion.div
-                className="text-6xl mb-4"
-                animate={{ rotate: [0, 15, -15, 10, -10, 0], scale: [1, 1.2, 1] }}
-                transition={{ duration: 0.8 }}
+                className="text-5xl mb-4"
+                animate={{ rotate: [0, 15, -12, 8, -5, 0], scale: [1, 1.25, 1] }}
+                transition={{ duration: 0.9 }}
               >
                 🎉
               </motion.div>
-              <h2
-                className="text-2xl font-bold mb-2"
-                style={{ color: "hsl(43,80%,92%)" }}
-              >
+              <h2 className="text-2xl font-black mb-2" style={{ color: "hsl(43,80%,92%)", letterSpacing: "-0.02em" }}>
                 Amazing picks!
               </h2>
-              <p className="text-sm mb-7" style={{ color: "rgba(232,196,90,0.55)" }}>
-                Your 7 sticker poses are selected. Upload your photo to get started.
+              <p className="text-sm mb-1" style={{ color: "rgba(232,196,90,0.55)" }}>
+                {filled} sticker{filled > 1 ? "s" : ""} selected
+              </p>
+              <p className="text-xs mb-7" style={{ color: "rgba(43,170,143,0.5)" }}>
+                Upload your photo to bring them to life.
               </p>
 
-              {/* Selected thumbnails in modal */}
+              {/* Selected emoji preview */}
               <div className="flex justify-center gap-2 mb-7 flex-wrap">
                 {selected.map((id) => {
                   const s = ALL_STICKERS.find((st) => st.id === id)!;
                   return (
-                    <img
+                    <motion.div
                       key={id}
-                      src={s.img}
-                      alt={s.name}
-                      className="w-12 h-12 rounded-xl object-cover border-2"
-                      style={{ borderColor: "rgba(43,170,143,0.5)" }}
-                    />
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", stiffness: 400 }}
+                      className="w-11 h-11 rounded-xl flex items-center justify-center text-xl"
+                      style={{
+                        background: "rgba(43,170,143,0.12)",
+                        border: "1px solid rgba(43,170,143,0.3)",
+                      }}
+                    >
+                      {s.emoji}
+                    </motion.div>
                   );
                 })}
               </div>
@@ -409,7 +597,7 @@ export default function CreateYours() {
                 style={{
                   background: "linear-gradient(135deg, rgba(43,170,143,0.9), rgba(232,196,90,0.85))",
                   border: "1px solid rgba(232,196,90,0.35)",
-                  boxShadow: "0 0 30px rgba(43,170,143,0.35), inset 0 1px 0 rgba(255,255,255,0.2)",
+                  boxShadow: "0 0 32px rgba(43,170,143,0.35), inset 0 1px 0 rgba(255,255,255,0.2)",
                   color: "hsl(204,46%,9%)",
                 }}
               >
@@ -420,7 +608,7 @@ export default function CreateYours() {
                 className="mt-3 text-sm cursor-pointer hover:opacity-80 transition-opacity"
                 style={{ color: "rgba(232,196,90,0.4)" }}
               >
-                Change selection
+                Edit selection
               </button>
             </motion.div>
           </motion.div>

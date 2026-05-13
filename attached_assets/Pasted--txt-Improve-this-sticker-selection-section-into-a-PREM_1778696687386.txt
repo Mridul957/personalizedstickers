@@ -1,0 +1,246 @@
+```txt
+Improve this sticker selection section into a PREMIUM modern interactive selection experience for a couple sticker website.
+
+CURRENT PROBLEM:
+- The section feels too basic
+- Only 8 sticker containers are shown
+- The heading is weak
+- Need stronger emotional conversion
+- Need scalable sticker grid
+- Need better selection logic
+- Need admin management system
+
+STYLE:
+Keep the same dark premium aesthetic:
+- deep navy background
+- glowing borders
+- romantic premium vibe
+- smooth hover animations
+- modern startup UI
+- emotional Gen-Z design
+
+DO NOT change the full design style.
+JUST UPGRADE IT.
+
+--------------------------------------------------
+SECTION HEADING IMPROVEMENT
+--------------------------------------------------
+
+Replace:
+"Pick Your 7 Poses"
+
+With a more emotional premium headline like:
+
+"Build Your Love Sticker Pack ✨"
+
+Subheading:
+"Choose your favorite moments together and create a personalized sticker sheet made just for your relationship."
+
+Alternative small text under it:
+"Minimum 7 selections required"
+
+Make the typography:
+- bold
+- premium
+- modern
+- emotionally engaging
+
+--------------------------------------------------
+SELECTION LOGIC
+--------------------------------------------------
+
+IMPORTANT BUSINESS LOGIC:
+
+- User MUST select minimum 7 stickers
+- User can select maximum 14 stickers
+- After 7 selections:
+  show soft encouragement:
+  "Want more cute moments? Add up to 14 stickers 💖"
+
+- Progress bar should update dynamically
+
+Examples:
+0/14 Selected
+7/14 Selected
+14/14 Selected
+
+When 14 are selected:
+- disable remaining cards
+- show:
+"Your sticker pack is complete ✨"
+
+IMPORTANT:
+Do NOT make unlimited selection.
+
+--------------------------------------------------
+STICKER GRID
+--------------------------------------------------
+
+Currently only 8 cards exist.
+
+Generate a FULL 30 sticker container grid.
+
+DO NOT use actual images.
+
+Only generate beautiful empty placeholder containers/cards with:
+- sticker title
+- small category tag
+- placeholder illustration area
+- premium hover effect
+
+Grid should:
+- be responsive
+- feel infinite/scalable
+- modern card layout
+- clean spacing
+
+Each card should contain:
+- rounded corners
+- glassmorphism effect
+- glow on hover
+- selected animation
+- smooth transitions
+
+When selected:
+- border glows
+- scale slightly
+- show animated checkmark
+
+--------------------------------------------------
+EXAMPLE STICKER TITLES
+--------------------------------------------------
+
+Generate 30 unique romantic sticker names like:
+
+- The First Kiss
+- Forever Hug
+- Sleepy Together
+- Late Night Calls
+- Matching Hoodies
+- Coffee Date
+- Holding Hands
+- Movie Night
+- Forever Yours
+- Cute Fight
+- Rainy Walk
+- Long Distance Love
+- Soft Smile
+- Together Always
+- Dance Together
+- Blushing Love
+- Lazy Sunday
+- Heart Hands
+- Ice Cream Date
+- Cozy Moments
+etc.
+
+Generate all 30 automatically.
+
+--------------------------------------------------
+CATEGORY TAGS
+--------------------------------------------------
+
+Randomly assign tags like:
+- Romance
+- Cozy
+- Cute
+- Playful
+- Emotional
+- Classic
+- Trending
+- Soft Love
+
+Use different accent colors for tags.
+
+--------------------------------------------------
+ANIMATIONS
+--------------------------------------------------
+
+Add:
+- floating glow effects
+- smooth card hover
+- progress animation
+- magnetic selection interaction
+- premium transitions
+- soft pulse on selected cards
+
+Use Framer Motion.
+
+Animations should feel:
+expensive and premium.
+
+--------------------------------------------------
+ADMIN DASHBOARD
+--------------------------------------------------
+
+Create a separate ADMIN PAGE.
+
+Purpose:
+I should be able to manage all stickers from admin panel.
+
+ADMIN FEATURES:
+
+1. Add New Sticker
+- sticker title
+- category
+- upload sticker image
+- enable/disable sticker
+
+2. Edit Existing Sticker
+
+3. Delete Sticker
+
+4. Reorder Stickers
+
+5. Toggle Trending Badge
+
+6. View Total Sticker Count
+
+7. Preview Sticker Card
+
+8. Save Changes
+
+--------------------------------------------------
+ADMIN UI STYLE
+--------------------------------------------------
+
+Keep same premium dark aesthetic.
+
+Admin panel should feel like:
+modern SaaS dashboard.
+
+Use:
+- sidebar navigation
+- analytics cards
+- sticker management table
+- modern modal popup forms
+- drag-and-drop reorder
+
+--------------------------------------------------
+TECH STACK
+--------------------------------------------------
+
+Use:
+- React
+- Next.js
+- Tailwind CSS
+- Framer Motion
+
+Structure should be:
+clean
+scalable
+component-based
+
+--------------------------------------------------
+FINAL GOAL
+--------------------------------------------------
+
+The sticker selection page should feel:
+high-end
+interactive
+emotionally addictive
+premium
+fun to use
+
+It should feel like a modern DTC startup product experience.
+```

@@ -2,6 +2,7 @@ import { Switch, Route, Router as WouterRouter } from "wouter";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Landing from "@/pages/Landing";
 import CreateYours from "@/pages/CreateYours";
+import Admin from "@/pages/Admin";
 
 function App() {
   return (
@@ -10,6 +11,7 @@ function App() {
         <Switch>
           <Route path="/" component={Landing} />
           <Route path="/create" component={CreateYours} />
+          <Route path="/admin" component={Admin} />
           <Route component={Landing} />
         </Switch>
       </WouterRouter>
