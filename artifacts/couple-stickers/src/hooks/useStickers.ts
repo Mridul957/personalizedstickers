@@ -7,11 +7,12 @@ export interface Sticker {
   name: string;
   tag: Tag;
   emoji: string;
+  image?: string;
   enabled: boolean;
   trending: boolean;
 }
 
-const STORAGE_KEY = "ours_stickers_v1";
+const STORAGE_KEY = "ours_stickers_v2";
 
 const DEFAULT_STICKERS: Sticker[] = [
   { id: 1,  name: "The First Kiss",     tag: "Romance",    emoji: "💋", enabled: true,  trending: true  },
@@ -57,15 +58,40 @@ function load(): Sticker[] {
 function save(stickers: Sticker[]) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(stickers));
-  } catch {}
+  } catch (e) {
+    console.warn("localStorage quota exceeded — images may be too large", e);
+  }
+}
+
+/** Crop + resize any image file to a square JPEG data-URL (default 600×600 px). */
+export function fileToSquareDataUrl(file: File, size = 600): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width  = size;
+        canvas.height = size;
+        const ctx = canvas.getContext("2d")!;
+        const min = Math.min(img.width, img.height);
+        const sx  = (img.width  - min) / 2;
+        const sy  = (img.height - min) / 2;
+        ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+        resolve(canvas.toDataURL("image/jpeg", 0.82));
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
 }
 
 export function useStickers() {
   const [stickers, setStickers] = useState<Sticker[]>(load);
 
-  useEffect(() => {
-    save(stickers);
-  }, [stickers]);
+  useEffect(() => { save(stickers); }, [stickers]);
 
   const addSticker = useCallback((data: Omit<Sticker, "id">) => {
     setStickers((prev) => {
@@ -86,16 +112,13 @@ export function useStickers() {
     setStickers(newOrder);
   }, []);
 
-  const toggleEnabled  = useCallback((id: number) => updateSticker(id, {}), [updateSticker]);
-  const toggleTrending = useCallback((id: number) => updateSticker(id, {}), [updateSticker]);
-
   return {
     stickers,
     addSticker,
     updateSticker,
     deleteSticker,
     reorder,
-    toggleEnabled: (id: number) => setStickers((prev) => prev.map((s) => s.id === id ? { ...s, enabled: !s.enabled } : s)),
+    toggleEnabled:  (id: number) => setStickers((prev) => prev.map((s) => s.id === id ? { ...s, enabled: !s.enabled } : s)),
     toggleTrending: (id: number) => setStickers((prev) => prev.map((s) => s.id === id ? { ...s, trending: !s.trending } : s)),
     resetToDefaults: () => setStickers(DEFAULT_STICKERS),
   };
