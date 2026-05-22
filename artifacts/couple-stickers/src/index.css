@@ -199,3 +199,19 @@
 .blob-3 { animation: blob-drift-3 26s ease-in-out infinite; }
 .blob-4 { animation: blob-drift   20s ease-in-out infinite reverse; }
 .float  { animation: float-y       6s ease-in-out infinite; }
+
+/* ── Marquee animations ─────────────────────────────── */
+@keyframes marquee-left-to-right {
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
+}
+
+.animate-marquee-left-to-right {
+  display: flex;
+  width: max-content;
+  animation: marquee-left-to-right 45s linear infinite;
+}

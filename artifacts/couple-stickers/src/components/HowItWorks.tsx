@@ -1,22 +1,22 @@
 import { motion } from "framer-motion";
-import { Upload, Wand2, Package } from "lucide-react";
+import { LayoutGrid, Upload, Package } from "lucide-react";
 
 const steps = [
   {
-    icon: Upload,
-    emoji: "📸",
-    title: "Upload Photo",
-    description: "Pick a favorite photo of you and your partner. We'll handle the rest.",
+    icon: LayoutGrid,
+    emoji: "🎨",
+    title: "Choose Your Style",
+    description: "Browse our sticker poses and pick the perfect style that matches your vibe as a couple.",
     glowColor: "rgba(43,170,143,0.5)",
     borderColor: "rgba(43,170,143,0.3)",
     badgeColor: "rgba(43,170,143,0.15)",
     step: "01",
   },
   {
-    icon: Wand2,
-    emoji: "✨",
-    title: "Pick Your Poses",
-    description: "Our artists transform your photo into beautifully illustrated sticker poses.",
+    icon: Upload,
+    emoji: "📸",
+    title: "Upload Your Photo",
+    description: "Share a favorite photo of you and your partner. Clear, well-lit shots work best!",
     glowColor: "rgba(232,196,90,0.5)",
     borderColor: "rgba(232,196,90,0.3)",
     badgeColor: "rgba(232,196,90,0.12)",

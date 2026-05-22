@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useStickers, type Tag } from "@/hooks/useStickers";
 
-const MIN_SELECT = 7;
-const MAX_SELECT = 14;
+const MIN_SELECT = 9;
 
 const TAG_STYLES: Record<Tag, { bg: string; text: string; border: string }> = {
   Romance:     { bg:"rgba(232,87,58,0.15)",   text:"rgba(232,87,58,0.95)",   border:"rgba(232,87,58,0.3)"   },
@@ -18,24 +17,30 @@ const TAG_STYLES: Record<Tag, { bg: string; text: string; border: string }> = {
 };
 
 export default function CreateYours() {
+  const [, setLocation] = useLocation();
   const { stickers }  = useStickers();
   const visible       = stickers.filter((s) => s.enabled);
 
-  const [selected,    setSelected]    = useState<number[]>([]);
-  const [shakeId,     setShakeId]     = useState<number | null>(null);
+  const [selected,    setSelected]    = useState<number[]>(() => {
+    try {
+      const raw = localStorage.getItem("ours_selected_stickers");
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem("ours_selected_stickers", JSON.stringify(selected));
+  }, [selected]);
   const [showSuccess, setShowSuccess] = useState(false);
 
   const filled = selected.length;
-  const pct    = (filled / MAX_SELECT) * 100;
+  const pct    = Math.min(100, (filled / MIN_SELECT) * 100);
   const atMin  = filled >= MIN_SELECT;
-  const atMax  = filled >= MAX_SELECT;
 
   function toggle(id: number) {
     if (selected.includes(id)) {
       setSelected((prev) => prev.filter((s) => s !== id));
-    } else if (atMax) {
-      setShakeId(id);
-      setTimeout(() => setShakeId(null), 600);
     } else {
       setSelected((prev) => [...prev, id]);
     }
@@ -59,7 +64,7 @@ export default function CreateYours() {
       <div className="sticky top-0 z-40 px-6 py-4 flex items-center justify-between"
         style={{ background:"rgba(12,28,38,0.82)", backdropFilter:"blur(28px) saturate(180%)", WebkitBackdropFilter:"blur(28px) saturate(180%)", borderBottom:"1px solid rgba(43,170,143,0.15)", boxShadow:"0 4px 24px rgba(0,0,0,0.4)" }}>
         <Link href="/">
-          <motion.button whileHover={{ scale:1.05, x:-2 }} whileTap={{ scale:0.95 }}
+          <motion.button type="button" whileHover={{ scale:1.05, x:-2 }} whileTap={{ scale:0.95 }}
             className="flex items-center gap-2 text-sm font-semibold cursor-pointer" style={{ color:"rgba(43,170,143,0.8)" }}>
             ← Back
           </motion.button>
@@ -67,11 +72,11 @@ export default function CreateYours() {
         <span className="text-xl font-bold tracking-tighter" style={{ color:"hsl(43,80%,92%)" }}>Ours. 💖</span>
         <motion.div layout className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold"
           style={{
-            background: atMax ? "rgba(43,170,143,0.2)" : atMin ? "rgba(43,170,143,0.12)" : "rgba(29,58,74,0.6)",
+            background: atMin ? "rgba(43,170,143,0.12)" : "rgba(29,58,74,0.6)",
             border: atMin ? "1px solid rgba(43,170,143,0.4)" : "1px solid rgba(43,170,143,0.2)",
-            color: atMax ? "rgba(43,170,143,1)" : atMin ? "rgba(43,170,143,0.85)" : "hsl(43,80%,75%)",
+            color: atMin ? "rgba(43,170,143,0.85)" : "hsl(43,80%,75%)",
           }}>
-          {atMax ? "✨ Pack Complete!" : `${filled} / ${MAX_SELECT} selected`}
+          {filled} selected
         </motion.div>
       </div>
 
@@ -94,39 +99,15 @@ export default function CreateYours() {
             Choose your favorite moments together and create a personalized sticker sheet made just for your relationship.
           </p>
           <p className="text-sm font-medium" style={{ color:"rgba(43,170,143,0.55)" }}>
-            Minimum 7 selections required · Maximum 14 stickers
+            Minimum 9 selections required
           </p>
 
-          {/* Progress bar */}
-          <div className="mt-7 max-w-md mx-auto">
-            <div className="flex justify-between text-xs font-semibold mb-2" style={{ color:"rgba(43,170,143,0.6)" }}>
-              <span>{filled} selected</span><span>{MAX_SELECT} max</span>
-            </div>
-            <div className="h-2.5 rounded-full overflow-hidden" style={{ background:"rgba(43,170,143,0.10)", border:"1px solid rgba(43,170,143,0.12)" }}>
-              <motion.div className="h-full rounded-full" animate={{ width:`${pct}%` }} transition={{ type:"spring", stiffness:200, damping:22 }}
-                style={{ background: atMax ? "linear-gradient(90deg,rgba(43,170,143,0.95),rgba(232,196,90,0.9),rgba(240,147,106,0.85))" : atMin ? "linear-gradient(90deg,rgba(43,170,143,0.85),rgba(232,196,90,0.7))" : "linear-gradient(90deg,rgba(43,170,143,0.7),rgba(43,170,143,0.5))", boxShadow:atMin ? "0 0 12px rgba(43,170,143,0.4)" : "none" }} />
-            </div>
-            <div className="relative mt-1 h-4">
-              <div className="absolute" style={{ left:`${(MIN_SELECT/MAX_SELECT)*100}%`, transform:"translateX(-50%)" }}>
-                <div className="w-0.5 h-2 mx-auto" style={{ background:"rgba(43,170,143,0.4)" }} />
-                <span className="text-[10px] block text-center" style={{ color:"rgba(43,170,143,0.5)" }}>min</span>
-              </div>
-            </div>
-          </div>
-
           <AnimatePresence>
-            {atMin && !atMax && (
-              <motion.div key="enc" initial={{ opacity:0, y:-8, scale:0.95 }} animate={{ opacity:1, y:0, scale:1 }} exit={{ opacity:0, y:-8 }}
-                className="mt-4 inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold"
-                style={{ background:"rgba(43,170,143,0.12)", border:"1px solid rgba(43,170,143,0.28)", color:"rgba(43,170,143,0.9)" }}>
-                💖 Want more cute moments? Add up to {MAX_SELECT - filled} more!
-              </motion.div>
-            )}
-            {atMax && (
+            {atMin && (
               <motion.div key="done" initial={{ opacity:0, y:-8, scale:0.95 }} animate={{ opacity:1, y:0, scale:1 }} exit={{ opacity:0, y:-8 }}
                 className="mt-4 inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold"
                 style={{ background:"linear-gradient(135deg,rgba(43,170,143,0.2),rgba(232,196,90,0.15))", border:"1px solid rgba(232,196,90,0.35)", color:"rgba(232,196,90,0.9)" }}>
-                ✨ Your sticker pack is complete!
+                ✨ Awesome! You can keep adding more if you'd like.
               </motion.div>
             )}
           </AnimatePresence>
@@ -145,15 +126,14 @@ export default function CreateYours() {
             const isSelected = selected.includes(sticker.id);
             const selOrder   = selected.indexOf(sticker.id) + 1;
             const tag        = TAG_STYLES[sticker.tag];
-            const isLocked   = !isSelected && atMax;
             const hasPhoto   = !!sticker.image;
 
             return (
               <motion.div key={sticker.id}
                 initial={{ opacity:0, y:20 }}
-                animate={ shakeId === sticker.id ? { x:[-8,8,-6,6,-3,3,0], opacity:1, y:0 } : { opacity:1, y:0, x:0 }}
-                transition={ shakeId === sticker.id ? { duration:0.5 } : { delay:i * 0.025, duration:0.4 }}
-                whileHover={!isLocked ? { y:-8, scale:1.04, transition:{ duration:0.18 } } : {}}
+                animate={{ opacity:1, y:0, x:0 }}
+                transition={{ delay:i * 0.025, duration:0.4 }}
+                whileHover={{ y:-8, scale:1.04, transition:{ duration:0.18 } }}
                 onClick={() => toggle(sticker.id)}
                 className="relative cursor-pointer rounded-2xl overflow-hidden group"
                 style={{
@@ -169,10 +149,8 @@ export default function CreateYours() {
                   style={{ background:isSelected ? "linear-gradient(90deg,transparent,rgba(43,170,143,0.6),transparent)" : "linear-gradient(90deg,transparent,rgba(232,196,90,0.18),transparent)" }} />
 
                 {/* Hover glow */}
-                {!isLocked && (
-                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                    style={{ background:"radial-gradient(circle at 50% 30%, rgba(43,170,143,0.12) 0%, transparent 70%)" }} />
-                )}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                  style={{ background:"radial-gradient(circle at 50% 30%, rgba(43,170,143,0.12) 0%, transparent 70%)" }} />
 
                 {/* Art area — 1:1 square */}
                 <div className="relative overflow-hidden" style={{ margin:"10px 10px 0 10px", borderRadius:"14px", aspectRatio:"1/1" }}>
@@ -232,13 +210,7 @@ export default function CreateYours() {
                   )}
                 </AnimatePresence>
 
-                {/* Locked overlay */}
-                {isLocked && (
-                  <div className="absolute inset-0 rounded-2xl flex items-center justify-center"
-                    style={{ background:"rgba(8,20,28,0.6)", backdropFilter:"blur(2px)" }}>
-                    <span className="text-xl opacity-60">🔒</span>
-                  </div>
-                )}
+
               </motion.div>
             );
           })}
@@ -256,7 +228,7 @@ export default function CreateYours() {
               {/* Mini bar */}
               <div className="h-1 rounded-full mb-3 overflow-hidden" style={{ background:"rgba(43,170,143,0.1)" }}>
                 <motion.div className="h-full rounded-full" animate={{ width:`${pct}%` }} transition={{ type:"spring", stiffness:200, damping:22 }}
-                  style={{ background:atMax ? "linear-gradient(90deg,rgba(43,170,143,0.9),rgba(232,196,90,0.9))" : "rgba(43,170,143,0.7)" }} />
+                  style={{ background:"rgba(43,170,143,0.7)" }} />
               </div>
               <div className="flex items-center gap-3">
                 {/* Thumbnails */}
@@ -281,15 +253,15 @@ export default function CreateYours() {
                       +{filled - 10}
                     </div>
                   )}
-                  {filled < MAX_SELECT && (
+                  {filled < MIN_SELECT && (
                     <div className="w-9 h-9 rounded-full border-2 border-dashed flex items-center justify-center text-[10px] font-semibold flex-shrink-0"
                       style={{ borderColor:"rgba(43,170,143,0.25)", color:"rgba(43,170,143,0.4)" }}>
-                      {filled < MIN_SELECT ? `${MIN_SELECT - filled}↑` : `+${MAX_SELECT - filled}`}
+                      {`${MIN_SELECT - filled}↑`}
                     </div>
                   )}
                 </div>
                 {/* CTA */}
-                <motion.button onClick={() => atMin && setShowSuccess(true)}
+                <motion.button type="button" onClick={() => atMin && setShowSuccess(true)}
                   whileHover={atMin ? { scale:1.05 } : {}} whileTap={atMin ? { scale:0.97 } : {}} disabled={!atMin}
                   className="rounded-full px-7 h-11 text-sm font-bold flex-shrink-0 transition-all duration-300"
                   style={atMin ? { background:"linear-gradient(135deg,rgba(43,170,143,0.9),rgba(232,196,90,0.85))", border:"1px solid rgba(232,196,90,0.4)", boxShadow:"0 0 28px rgba(43,170,143,0.4),inset 0 1px 0 rgba(255,255,255,0.2)", color:"hsl(204,46%,9%)", cursor:"pointer" } : { background:"rgba(43,170,143,0.1)", border:"1px solid rgba(43,170,143,0.18)", color:"rgba(43,170,143,0.35)", cursor:"not-allowed" }}>
@@ -334,12 +306,13 @@ export default function CreateYours() {
                   );
                 })}
               </div>
-              <motion.button whileHover={{ scale:1.05 }} whileTap={{ scale:0.97 }}
+              <motion.button type="button" whileHover={{ scale:1.05 }} whileTap={{ scale:0.97 }}
+                onClick={() => setLocation("/upload")}
                 className="w-full rounded-full h-12 font-bold text-base cursor-pointer"
                 style={{ background:"linear-gradient(135deg,rgba(43,170,143,0.9),rgba(232,196,90,0.85))", border:"1px solid rgba(232,196,90,0.35)", boxShadow:"0 0 32px rgba(43,170,143,0.35),inset 0 1px 0 rgba(255,255,255,0.2)", color:"hsl(204,46%,9%)" }}>
                 Upload My Photo →
               </motion.button>
-              <button onClick={() => setShowSuccess(false)}
+              <button type="button" onClick={() => setShowSuccess(false)}
                 className="mt-3 text-sm cursor-pointer hover:opacity-80 transition-opacity" style={{ color:"rgba(232,196,90,0.4)" }}>
                 Edit selection
               </button>

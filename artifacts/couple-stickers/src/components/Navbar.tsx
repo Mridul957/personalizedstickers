@@ -2,6 +2,9 @@ import { motion } from "framer-motion";
 import { Link, useLocation } from "wouter";
 
 export function Navbar() {
+  const [location] = useLocation();
+  const isHome = location === "/";
+
   return (
     <motion.nav
       initial={{ y: -24, opacity: 0 }}
@@ -16,14 +19,27 @@ export function Navbar() {
         boxShadow: "0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(232,196,90,0.2)",
       }}
     >
-      <Link href="/" className="text-2xl font-bold tracking-tighter" style={{ color: "hsl(43,80%,92%)" }}>
+      <Link href="/" className="text-2xl font-bold tracking-tighter cursor-pointer" style={{ color: "hsl(43,80%,92%)" }}>
         Ours.
       </Link>
 
       <div className="hidden md:flex items-center gap-8 text-sm font-medium" style={{ color: "rgba(232,196,90,0.6)" }}>
-        <a href="#how-it-works" className="hover:text-[hsl(43,80%,92%)] transition-colors duration-200">How It Works</a>
-        <a href="#gallery" className="hover:text-[hsl(43,80%,92%)] transition-colors duration-200">Gallery</a>
-        <a href="#reviews" className="hover:text-[hsl(43,80%,92%)] transition-colors duration-200">Reviews</a>
+        {isHome ? (
+          <>
+            <a href="#how-it-works" className="hover:text-[hsl(43,80%,92%)] transition-colors duration-200">How It Works</a>
+            <a href="#gallery" className="hover:text-[hsl(43,80%,92%)] transition-colors duration-200">Gallery</a>
+            <a href="#reviews" className="hover:text-[hsl(43,80%,92%)] transition-colors duration-200">Reviews</a>
+          </>
+        ) : (
+          <>
+            <Link href="/#how-it-works" className="hover:text-[hsl(43,80%,92%)] transition-colors duration-200 cursor-pointer">How It Works</Link>
+            <Link href="/#gallery" className="hover:text-[hsl(43,80%,92%)] transition-colors duration-200 cursor-pointer">Gallery</Link>
+            <Link href="/#reviews" className="hover:text-[hsl(43,80%,92%)] transition-colors duration-200 cursor-pointer">Reviews</Link>
+          </>
+        )}
+        <Link href="/contact" className={`transition-colors duration-200 cursor-pointer ${location === "/contact" ? "text-[hsl(43,80%,92%)] font-extrabold" : "hover:text-[hsl(43,80%,92%)]"}`}>
+          Contact
+        </Link>
       </div>
 
       <Link href="/create">

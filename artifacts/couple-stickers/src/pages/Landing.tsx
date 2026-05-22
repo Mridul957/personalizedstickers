@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
 import { CinematicConversion } from "@/components/CinematicConversion";
@@ -7,6 +8,30 @@ import { Reviews } from "@/components/Reviews";
 import { Footer } from "@/components/Footer";
 
 export default function Landing() {
+  useEffect(() => {
+    // Only smooth-scroll to hash if user navigated here from another page on this site.
+    // This prevents the page from auto-scrolling when directly loading the home page.
+    const hash = window.location.hash;
+    const fromSameSite = document.referrer && new URL(document.referrer).origin === window.location.origin;
+
+    if (hash && fromSameSite) {
+      const id = hash.substring(1);
+      const timer = setTimeout(() => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        // Clear the hash so refreshing doesn't re-trigger the scroll
+        history.replaceState(null, "", window.location.pathname);
+      }, 180);
+      return () => clearTimeout(timer);
+    } else if (hash) {
+      // Remove stale hash from URL without scrolling
+      history.replaceState(null, "", window.location.pathname);
+    }
+    return;
+  }, []);
+
   return (
     <div className="relative min-h-screen overflow-x-hidden" style={{ background: "hsl(204,46%,9%)" }}>
       {/* Ambient background blobs using the palette */}
