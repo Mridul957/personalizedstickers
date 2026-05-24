@@ -12,57 +12,6 @@ export interface Sticker {
   trending: boolean;
 }
 
-const STORAGE_KEY = "ours_stickers_v2";
-
-const DEFAULT_STICKERS: Sticker[] = [
-  { id: 1,  name: "The First Kiss",     tag: "Romance",    emoji: "💋", enabled: true,  trending: true  },
-  { id: 2,  name: "Forever Hug",        tag: "Cozy",       emoji: "🤗", enabled: true,  trending: false },
-  { id: 3,  name: "Sleepy Together",    tag: "Soft Love",  emoji: "😴", enabled: true,  trending: false },
-  { id: 4,  name: "Late Night Calls",   tag: "Emotional",  emoji: "🌙", enabled: true,  trending: true  },
-  { id: 5,  name: "Matching Hoodies",   tag: "Cute",       emoji: "👫", enabled: true,  trending: false },
-  { id: 6,  name: "Coffee Date",        tag: "Classic",    emoji: "☕", enabled: true,  trending: false },
-  { id: 7,  name: "Holding Hands",      tag: "Classic",    emoji: "🤝", enabled: true,  trending: false },
-  { id: 8,  name: "Movie Night",        tag: "Cozy",       emoji: "🎬", enabled: true,  trending: false },
-  { id: 9,  name: "Forever Yours",      tag: "Romance",    emoji: "💍", enabled: true,  trending: true  },
-  { id: 10, name: "Cute Fight",         tag: "Playful",    emoji: "🥊", enabled: true,  trending: false },
-  { id: 11, name: "Rainy Walk",         tag: "Emotional",  emoji: "☂️", enabled: true,  trending: false },
-  { id: 12, name: "Long Distance Love", tag: "Emotional",  emoji: "✈️", enabled: true,  trending: false },
-  { id: 13, name: "Soft Smile",         tag: "Soft Love",  emoji: "🥰", enabled: true,  trending: false },
-  { id: 14, name: "Together Always",    tag: "Classic",    emoji: "♾️", enabled: true,  trending: false },
-  { id: 15, name: "Dance Together",     tag: "Playful",    emoji: "💃", enabled: true,  trending: false },
-  { id: 16, name: "Blushing Love",      tag: "Romance",    emoji: "😊", enabled: true,  trending: false },
-  { id: 17, name: "Lazy Sunday",        tag: "Cozy",       emoji: "🛋️", enabled: true,  trending: false },
-  { id: 18, name: "Heart Hands",        tag: "Cute",       emoji: "🫶", enabled: true,  trending: true  },
-  { id: 19, name: "Ice Cream Date",     tag: "Cute",       emoji: "🍦", enabled: true,  trending: false },
-  { id: 20, name: "Cozy Moments",       tag: "Cozy",       emoji: "🧣", enabled: true,  trending: false },
-  { id: 21, name: "Stolen Glances",     tag: "Romance",    emoji: "👀", enabled: true,  trending: false },
-  { id: 22, name: "Good Morning Kiss",  tag: "Soft Love",  emoji: "🌅", enabled: true,  trending: false },
-  { id: 23, name: "Stargazing Night",   tag: "Emotional",  emoji: "🌟", enabled: true,  trending: false },
-  { id: 24, name: "Pinky Promise",      tag: "Cute",       emoji: "🤙", enabled: true,  trending: false },
-  { id: 25, name: "Reading Together",   tag: "Cozy",       emoji: "📖", enabled: true,  trending: false },
-  { id: 26, name: "Beach Walk",         tag: "Classic",    emoji: "🌊", enabled: true,  trending: false },
-  { id: 27, name: "Surprise Hug",       tag: "Playful",    emoji: "🎁", enabled: true,  trending: false },
-  { id: 28, name: "Matching Outfits",   tag: "Trending",   emoji: "👗", enabled: true,  trending: true  },
-  { id: 29, name: "Selfie Time",        tag: "Trending",   emoji: "🤳", enabled: true,  trending: false },
-  { id: 30, name: "Forever & Always",   tag: "Emotional",  emoji: "💞", enabled: true,  trending: false },
-];
-
-function load(): Sticker[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as Sticker[];
-  } catch {}
-  return DEFAULT_STICKERS;
-}
-
-function save(stickers: Sticker[]) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(stickers));
-  } catch (e) {
-    console.warn("localStorage quota exceeded — images may be too large", e);
-  }
-}
-
 /** Crop + resize any image file to a square JPEG data-URL (default 600×600 px). */
 export function fileToSquareDataUrl(file: File, size = 600): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -89,39 +38,112 @@ export function fileToSquareDataUrl(file: File, size = 600): Promise<string> {
 }
 
 export function useStickers() {
-  const [stickers, setStickers] = useState<Sticker[]>(load);
+  const [stickers, setStickers] = useState<Sticker[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => { save(stickers); }, [stickers]);
+  const refresh = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/stickers");
+      if (res.ok) {
+        const data = await res.json();
+        setStickers(data);
+      }
+    } catch (e) {
+      console.error("Failed to fetch stickers from backend:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const addSticker = useCallback((data: Omit<Sticker, "id">) => {
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  const addSticker = useCallback(async (data: Omit<Sticker, "id">) => {
+    try {
+      const res = await fetch("/api/stickers", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-password": "8523",
+        },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        const newSticker = await res.json();
+        setStickers((prev) => [...prev, newSticker]);
+      }
+    } catch (e) {
+      console.error("Failed to add sticker:", e);
+    }
+  }, []);
+
+  const updateSticker = useCallback(async (id: number, data: Partial<Omit<Sticker, "id">>) => {
+    try {
+      const res = await fetch(`/api/stickers/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-password": "8523",
+        },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setStickers((prev) => prev.map((s) => (s.id === id ? updated : s)));
+      }
+    } catch (e) {
+      console.error("Failed to update sticker:", e);
+    }
+  }, []);
+
+  const deleteSticker = useCallback(async (id: number) => {
+    try {
+      const res = await fetch(`/api/stickers/${id}`, {
+        method: "DELETE",
+        headers: {
+          "x-admin-password": "8523",
+        },
+      });
+      if (res.ok) {
+        setStickers((prev) => prev.filter((s) => s.id !== id));
+      }
+    } catch (e) {
+      console.error("Failed to delete sticker:", e);
+    }
+  }, []);
+
+  const toggleEnabled = useCallback(async (id: number) => {
     setStickers((prev) => {
-      const id = prev.length > 0 ? Math.max(...prev.map((s) => s.id)) + 1 : 1;
-      return [...prev, { id, ...data }];
+      const s = prev.find((item) => item.id === id);
+      if (!s) return prev;
+      const nextVal = !s.enabled;
+      updateSticker(id, { enabled: nextVal });
+      return prev.map((item) => item.id === id ? { ...item, enabled: nextVal } : item);
     });
-  }, []);
+  }, [updateSticker]);
 
-  const updateSticker = useCallback((id: number, data: Partial<Omit<Sticker, "id">>) => {
-    setStickers((prev) => prev.map((s) => s.id === id ? { ...s, ...data } : s));
-  }, []);
-
-  const deleteSticker = useCallback((id: number) => {
-    setStickers((prev) => prev.filter((s) => s.id !== id));
-  }, []);
-
-  const reorder = useCallback((newOrder: Sticker[]) => {
-    setStickers(newOrder);
-  }, []);
+  const toggleTrending = useCallback(async (id: number) => {
+    setStickers((prev) => {
+      const s = prev.find((item) => item.id === id);
+      if (!s) return prev;
+      const nextVal = !s.trending;
+      updateSticker(id, { trending: nextVal });
+      return prev.map((item) => item.id === id ? { ...item, trending: nextVal } : item);
+    });
+  }, [updateSticker]);
 
   return {
     stickers,
+    loading,
+    refresh,
     addSticker,
     updateSticker,
     deleteSticker,
-    reorder,
-    toggleEnabled:  (id: number) => setStickers((prev) => prev.map((s) => s.id === id ? { ...s, enabled: !s.enabled } : s)),
-    toggleTrending: (id: number) => setStickers((prev) => prev.map((s) => s.id === id ? { ...s, trending: !s.trending } : s)),
-    resetToDefaults: () => setStickers(DEFAULT_STICKERS),
+    reorder: (newOrder: Sticker[]) => setStickers(newOrder),
+    toggleEnabled,
+    toggleTrending,
+    resetToDefaults: () => {},
   };
 }
-
-export { DEFAULT_STICKERS };

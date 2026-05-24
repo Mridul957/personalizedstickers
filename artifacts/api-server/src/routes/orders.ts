@@ -7,7 +7,7 @@ const router = Router();
 // Public: Submit a completed order / payment
 router.post("/", async (req, res) => {
   try {
-    const { buyerName, buyerEmail, buyerMobile, buyerAddress, stickers, photos, amount, receiptPhoto } = req.body;
+    const { buyerName, buyerEmail, buyerMobile, buyerAddress, stickers, photos, amount, receiptPhoto, appliedCoupon, discountAmount } = req.body;
 
     if (!buyerName || !buyerEmail || !buyerMobile || !buyerAddress || !stickers || !photos || amount === undefined) {
       res.status(400).json({ error: "Buyer details (name, email, mobile, address), stickers, photos, and amount are required." });
@@ -24,6 +24,8 @@ router.post("/", async (req, res) => {
       photos: JSON.stringify(photos),
       amount: Number(amount),
       receiptPhoto: receiptPhoto || null,
+      appliedCoupon: appliedCoupon || null,
+      discountAmount: discountAmount ? Number(discountAmount) : 0,
     });
 
     res.status(201).json(newOrder);
@@ -73,7 +75,7 @@ router.get("/settings", async (req, res) => {
 // Admin: Update global settings
 router.post("/settings", requireAdminPassword, async (req, res) => {
   try {
-    const { stickerPrice, billDiscount } = req.body;
+    const { stickerPrice, billDiscount, announcementEnabled, announcementText } = req.body;
 
     if (stickerPrice === undefined || billDiscount === undefined) {
       res.status(400).json({ error: "stickerPrice and billDiscount are required." });
@@ -83,6 +85,8 @@ router.post("/settings", requireAdminPassword, async (req, res) => {
     const updated = updateSettings({
       stickerPrice: Number(stickerPrice),
       billDiscount: Number(billDiscount),
+      announcementEnabled: announcementEnabled !== undefined ? Boolean(announcementEnabled) : false,
+      announcementText: announcementText !== undefined ? String(announcementText) : "",
     });
 
     res.json(updated);

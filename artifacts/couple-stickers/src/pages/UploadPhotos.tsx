@@ -94,7 +94,7 @@ export default function UploadPhotos() {
             ← Back to Selection
           </motion.button>
         </Link>
-        <span className="text-xl font-bold tracking-tighter" style={{ color: "hsl(43,80%,92%)" }}>Ours. 💖</span>
+        <span className="text-xl font-bold tracking-tighter" style={{ color: "hsl(43,80%,92%)" }}>Match Stickers 💖</span>
         <div className="w-20"></div>
       </div>
 

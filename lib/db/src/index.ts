@@ -2,7 +2,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import { eq, asc, desc } from "drizzle-orm";
 import * as schema from "./schema";
-import { ordersTable, reviewsTable, contactSubmissionsTable, callbackRequestsTable, type Order, type Review, type ContactSubmission, type CallbackRequest } from "./schema";
+import { ordersTable, reviewsTable, contactSubmissionsTable, callbackRequestsTable, stickersTable, couponsTable, type Order, type Review, type ContactSubmission, type CallbackRequest, type Coupon } from "./schema";
 import fs from "fs";
 import path from "path";
 
@@ -26,6 +26,8 @@ interface LocalDbSchema {
   orders: Order[];
   contactSubmissions: ContactSubmission[];
   callbackRequests: CallbackRequest[];
+  stickers?: any[];
+  coupons?: Coupon[];
 }
 
 const DEFAULT_REVIEWS: Review[] = [
@@ -213,6 +215,39 @@ const DEFAULT_REVIEWS: Review[] = [
   }
 ];
 
+const DEFAULT_STICKERS_DATA: any[] = [
+  { id: 1,  name: "The First Kiss",     tag: "Romance",    emoji: "💋", enabled: true,  trending: true  },
+  { id: 2,  name: "Forever Hug",        tag: "Cozy",       emoji: "🤗", enabled: true,  trending: false },
+  { id: 3,  name: "Sleepy Together",    tag: "Soft Love",  emoji: "😴", enabled: true,  trending: false },
+  { id: 4,  name: "Late Night Calls",   tag: "Emotional",  emoji: "🌙", enabled: true,  trending: true  },
+  { id: 5,  name: "Matching Hoodies",   tag: "Cute",       emoji: "👫", enabled: true,  trending: false },
+  { id: 6,  name: "Coffee Date",        tag: "Classic",    emoji: "☕", enabled: true,  trending: false },
+  { id: 7,  name: "Holding Hands",      tag: "Classic",    emoji: "🤝", enabled: true,  trending: false },
+  { id: 8,  name: "Movie Night",        tag: "Cozy",       emoji: "🎬", enabled: true,  trending: false },
+  { id: 9,  name: "Forever Yours",      tag: "Romance",    emoji: "💍", enabled: true,  trending: true  },
+  { id: 10, name: "Cute Fight",         tag: "Playful",    emoji: "🥊", enabled: true,  trending: false },
+  { id: 11, name: "Rainy Walk",         tag: "Emotional",  emoji: "☂️", enabled: true,  trending: false },
+  { id: 12, name: "Long Distance Love", tag: "Emotional",  emoji: "✈️", enabled: true,  trending: false },
+  { id: 13, name: "Soft Smile",         tag: "Soft Love",  emoji: "🥰", enabled: true,  trending: false },
+  { id: 14, name: "Together Always",    tag: "Classic",    emoji: "♾️", enabled: true,  trending: false },
+  { id: 15, name: "Dance Together",     tag: "Playful",    emoji: "💃", enabled: true,  trending: false },
+  { id: 16, name: "Blushing Love",      tag: "Romance",    emoji: "😊", enabled: true,  trending: false },
+  { id: 17, name: "Lazy Sunday",        tag: "Cozy",       emoji: "🛋️", enabled: true,  trending: false },
+  { id: 18, name: "Heart Hands",        tag: "Cute",       emoji: "🫶", enabled: true,  trending: true  },
+  { id: 19, name: "Ice Cream Date",     tag: "Cute",       emoji: "🍦", enabled: true,  trending: false },
+  { id: 20, name: "Cozy Moments",       tag: "Cozy",       emoji: "🧣", enabled: true,  trending: false },
+  { id: 21, name: "Stolen Glances",     tag: "Romance",    emoji: "👀", enabled: true,  trending: false },
+  { id: 22, name: "Good Morning Kiss",  tag: "Soft Love",  emoji: "🌅", enabled: true,  trending: false },
+  { id: 23, name: "Stargazing Night",   tag: "Emotional",  emoji: "🌟", enabled: true,  trending: false },
+  { id: 24, name: "Pinky Promise",      tag: "Cute",       emoji: "🤙", enabled: true,  trending: false },
+  { id: 25, name: "Reading Together",   tag: "Cozy",       emoji: "📖", enabled: true,  trending: false },
+  { id: 26, name: "Beach Walk",         tag: "Classic",    emoji: "🌊", enabled: true,  trending: false },
+  { id: 27, name: "Surprise Hug",       tag: "Playful",    emoji: "🎁", enabled: true,  trending: false },
+  { id: 28, name: "Matching Outfits",   tag: "Trending",   emoji: "👗", enabled: true,  trending: true  },
+  { id: 29, name: "Selfie Time",        tag: "Trending",   emoji: "🤳", enabled: true,  trending: false },
+  { id: 30, name: "Forever & Always",   tag: "Emotional",  emoji: "💞", enabled: true,  trending: false }
+];
+
 function readLocalDb(): LocalDbSchema {
   try {
     if (fs.existsSync(LOCAL_DB_PATH)) {
@@ -222,6 +257,8 @@ function readLocalDb(): LocalDbSchema {
       if (!parsed.orders) parsed.orders = [];
       if (!parsed.contactSubmissions) parsed.contactSubmissions = [];
       if (!parsed.callbackRequests) parsed.callbackRequests = [];
+      if (!parsed.stickers) parsed.stickers = DEFAULT_STICKERS_DATA;
+      if (!parsed.coupons) parsed.coupons = [];
       return parsed;
     }
   } catch (error) {
@@ -233,6 +270,8 @@ function readLocalDb(): LocalDbSchema {
     orders: [],
     contactSubmissions: [],
     callbackRequests: [],
+    stickers: DEFAULT_STICKERS_DATA,
+    coupons: [],
   };
   writeLocalDb(initialDb);
   return initialDb;
@@ -248,8 +287,37 @@ function writeLocalDb(data: LocalDbSchema) {
 
 // --- CRUD Database Adapter Functions ---
 
+async function seedReviewsIfEmpty() {
+  if (!usePostgres || !dbInstance) return;
+  try {
+    const countRes = await dbInstance.select().from(reviewsTable).limit(1);
+    if (countRes.length === 0) {
+      console.log("Supabase reviews table is empty. Seeding default reviews...");
+      for (const r of DEFAULT_REVIEWS) {
+        await dbInstance.insert(reviewsTable).values({
+          name: r.name,
+          handle: r.handle,
+          text: r.text,
+          rating: r.rating,
+          emoji: r.emoji,
+          photos: JSON.stringify(r.photos || []),
+          enabled: r.enabled,
+          rank: r.rank,
+          glowColor: r.glowColor,
+          borderColor: r.borderColor,
+          createdAt: new Date(),
+        });
+      }
+      console.log("Successfully seeded default reviews to Supabase!");
+    }
+  } catch (error) {
+    console.error("Failed to seed default reviews to Supabase:", error);
+  }
+}
+
 export async function getReviews(): Promise<Review[]> {
   if (usePostgres) {
+    await seedReviewsIfEmpty();
     return await dbInstance
       .select()
       .from(reviewsTable)
@@ -268,6 +336,7 @@ export async function getReviews(): Promise<Review[]> {
 
 export async function getAllReviewsAdmin(): Promise<Review[]> {
   if (usePostgres) {
+    await seedReviewsIfEmpty();
     return await dbInstance
       .select()
       .from(reviewsTable)
@@ -350,6 +419,8 @@ export async function createOrder(order: Omit<Order, "id" | "createdAt">): Promi
     const newOrder: Order = {
       id,
       ...order,
+      discountAmount: order.discountAmount ?? 0,
+      appliedCoupon: order.appliedCoupon ?? null,
       createdAt: new Date(),
     };
     data.orders.push(newOrder);
@@ -479,18 +550,26 @@ const SETTINGS_FILE_PATH = path.resolve(import.meta.dirname, "../settings.json")
 export interface SettingsData {
   stickerPrice: number;
   billDiscount: number;
+  announcementEnabled?: boolean;
+  announcementText?: string;
 }
 
 export function getSettings(): SettingsData {
   try {
     if (fs.existsSync(SETTINGS_FILE_PATH)) {
       const content = fs.readFileSync(SETTINGS_FILE_PATH, "utf-8");
-      return JSON.parse(content) as SettingsData;
+      const parsed = JSON.parse(content) as SettingsData;
+      return {
+        stickerPrice: parsed.stickerPrice || 40,
+        billDiscount: parsed.billDiscount || 0,
+        announcementEnabled: parsed.announcementEnabled !== undefined ? parsed.announcementEnabled : false,
+        announcementText: parsed.announcementText || "",
+      };
     }
   } catch (e) {
     console.error("Failed to read settings, using default:", e);
   }
-  return { stickerPrice: 40, billDiscount: 0 };
+  return { stickerPrice: 40, billDiscount: 0, announcementEnabled: false, announcementText: "" };
 }
 
 export function updateSettings(data: SettingsData): SettingsData {
@@ -501,4 +580,179 @@ export function updateSettings(data: SettingsData): SettingsData {
   }
   return data;
 }
+
+// --- Stickers Table DB Adapter & Seeder Functions ---
+
+async function seedStickersIfEmpty() {
+  // Seeder disabled to prevent default/old stickers from ever repopulating.
+  return;
+}
+
+export async function getStickers(): Promise<any[]> {
+  if (usePostgres) {
+    await seedStickersIfEmpty();
+    return await dbInstance
+      .select()
+      .from(stickersTable)
+      .orderBy(asc(stickersTable.id));
+  } else {
+    const data = readLocalDb();
+    if (!data.stickers) data.stickers = DEFAULT_STICKERS_DATA;
+    return data.stickers;
+  }
+}
+
+export async function createSticker(sticker: any): Promise<any> {
+  if (usePostgres) {
+    const [inserted] = await dbInstance
+      .insert(stickersTable)
+      .values(sticker)
+      .returning();
+    return inserted;
+  } else {
+    const data = readLocalDb();
+    if (!data.stickers) data.stickers = DEFAULT_STICKERS_DATA;
+    const id = data.stickers.length > 0 ? Math.max(...data.stickers.map((s) => s.id)) + 1 : 1;
+    const newSticker = { id, ...sticker };
+    data.stickers.push(newSticker);
+    writeLocalDb(data);
+    return newSticker;
+  }
+}
+
+export async function updateSticker(id: number, updates: any): Promise<any> {
+  if (usePostgres) {
+    const [updated] = await dbInstance
+      .update(stickersTable)
+      .set(updates)
+      .where(eq(stickersTable.id, id))
+      .returning();
+    if (!updated) throw new Error(`Sticker with id ${id} not found`);
+    return updated;
+  } else {
+    const data = readLocalDb();
+    if (!data.stickers) data.stickers = DEFAULT_STICKERS_DATA;
+    const index = data.stickers.findIndex((s) => s.id === id);
+    if (index === -1) throw new Error(`Sticker with id ${id} not found`);
+    const updatedSticker = {
+      ...data.stickers[index],
+      ...updates,
+    };
+    data.stickers[index] = updatedSticker;
+    writeLocalDb(data);
+    return updatedSticker;
+  }
+}
+
+export async function deleteSticker(id: number): Promise<void> {
+  if (usePostgres) {
+    await dbInstance
+      .delete(stickersTable)
+      .where(eq(stickersTable.id, id));
+  } else {
+    const data = readLocalDb();
+    if (!data.stickers) data.stickers = DEFAULT_STICKERS_DATA;
+    data.stickers = data.stickers.filter((s) => s.id !== id);
+    writeLocalDb(data);
+  }
+}
+
+// --- Coupons Table DB Adapter & Seeder Functions ---
+
+export async function getCoupons(): Promise<Coupon[]> {
+  if (usePostgres) {
+    return await dbInstance
+      .select()
+      .from(couponsTable)
+      .orderBy(desc(couponsTable.createdAt));
+  } else {
+    const data = readLocalDb();
+    if (!data.coupons) data.coupons = [];
+    return data.coupons.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+}
+
+export async function getCouponByCode(code: string): Promise<Coupon | null> {
+  if (usePostgres) {
+    const [coupon] = await dbInstance
+      .select()
+      .from(couponsTable)
+      .where(eq(couponsTable.code, code.toUpperCase().trim()))
+      .limit(1);
+    return coupon || null;
+  } else {
+    const data = readLocalDb();
+    if (!data.coupons) data.coupons = [];
+    const coupon = data.coupons.find((c) => c.code.toUpperCase().trim() === code.toUpperCase().trim());
+    return coupon || null;
+  }
+}
+
+export async function createCoupon(coupon: Omit<Coupon, "id" | "createdAt">): Promise<Coupon> {
+  const formatted = {
+    ...coupon,
+    code: coupon.code.toUpperCase().trim(),
+  };
+  if (usePostgres) {
+    const [inserted] = await dbInstance
+      .insert(couponsTable)
+      .values(formatted)
+      .returning();
+    return inserted;
+  } else {
+    const data = readLocalDb();
+    if (!data.coupons) data.coupons = [];
+    const id = data.coupons.length > 0 ? Math.max(...data.coupons.map((c) => c.id)) + 1 : 1;
+    const newCoupon: Coupon = {
+      id,
+      ...formatted,
+      createdAt: new Date(),
+    };
+    data.coupons.push(newCoupon);
+    writeLocalDb(data);
+    return newCoupon;
+  }
+}
+
+export async function updateCoupon(id: number, updates: Partial<Omit<Coupon, "id" | "createdAt">>): Promise<Coupon> {
+  const formatted = { ...updates };
+  if (formatted.code) {
+    formatted.code = formatted.code.toUpperCase().trim();
+  }
+  if (usePostgres) {
+    const [updated] = await dbInstance
+      .update(couponsTable)
+      .set(formatted)
+      .where(eq(couponsTable.id, id))
+      .returning();
+    if (!updated) throw new Error(`Coupon with id ${id} not found`);
+    return updated;
+  } else {
+    const data = readLocalDb();
+    if (!data.coupons) data.coupons = [];
+    const index = data.coupons.findIndex((c) => c.id === id);
+    if (index === -1) throw new Error(`Coupon with id ${id} not found`);
+    const updatedCoupon: Coupon = {
+      ...data.coupons[index],
+      ...formatted,
+    };
+    data.coupons[index] = updatedCoupon;
+    writeLocalDb(data);
+    return updatedCoupon;
+  }
+}
+
+export async function deleteCoupon(id: number): Promise<void> {
+  if (usePostgres) {
+    await dbInstance
+      .delete(couponsTable)
+      .where(eq(couponsTable.id, id));
+  } else {
+    const data = readLocalDb();
+    if (!data.coupons) data.coupons = [];
+    data.coupons = data.coupons.filter((c) => c.id !== id);
+    writeLocalDb(data);
+  }
+}
+
 

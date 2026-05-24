@@ -1,4 +1,6 @@
 {
   "stickerPrice": 49,
-  "billDiscount": 0
+  "billDiscount": 0,
+  "announcementEnabled": false,
+  "announcementText": "Flash Sale"
 }

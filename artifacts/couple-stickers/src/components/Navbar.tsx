@@ -20,7 +20,7 @@ export function Navbar() {
       }}
     >
       <Link href="/" className="text-2xl font-bold tracking-tighter cursor-pointer" style={{ color: "hsl(43,80%,92%)" }}>
-        Ours.
+        Match Stickers
       </Link>
 
       <div className="hidden md:flex items-center gap-8 text-sm font-medium" style={{ color: "rgba(232,196,90,0.6)" }}>

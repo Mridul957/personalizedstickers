@@ -200,18 +200,28 @@
 .blob-4 { animation: blob-drift   20s ease-in-out infinite reverse; }
 .float  { animation: float-y       6s ease-in-out infinite; }
 
-/* ── Marquee animations ─────────────────────────────── */
-@keyframes marquee-left-to-right {
+@keyframes marquee-right-to-left {
   0% {
-    transform: translateX(-50%);
+    transform: translateX(0%);
   }
   100% {
-    transform: translateX(0%);
+    transform: translateX(-50%);
   }
 }
 
-.animate-marquee-left-to-right {
+.animate-marquee-right-to-left {
   display: flex;
   width: max-content;
-  animation: marquee-left-to-right 45s linear infinite;
+  animation: marquee-right-to-left 45s linear infinite;
+}
+
+/* --- Announcement Banner layout shifting --- */
+body.has-announcement {
+  padding-top: 32px;
+}
+body.has-announcement nav.fixed.top-0 {
+  top: 32px !important;
+}
+body.has-announcement .sticky.top-0 {
+  top: 32px !important;
 }

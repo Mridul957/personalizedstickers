@@ -16,7 +16,8 @@ const COLOR_PAIRS = [
 // Admin password authorization middleware helper
 export function requireAdminPassword(req: any, res: any, next: any) {
   const password = req.headers["x-admin-password"];
-  if (password === "8523") {
+  const passcode = process.env.ADMIN_PASSCODE || "8523";
+  if (password === passcode) {
     next();
   } else {
     res.status(401).json({ error: "Unauthorized. Invalid admin password." });

@@ -183,10 +183,23 @@ export function Reviews() {
         return res.json();
       })
       .then((data) => {
-        const mapped = data.map((r: any) => ({
-          ...r,
-          photos: typeof r.photos === "string" ? JSON.parse(r.photos) : (r.photos || [])
-        }));
+        const mapped = data.map((r: any) => {
+          let parsedPhotos = [];
+          if (Array.isArray(r.photos)) {
+            parsedPhotos = r.photos;
+          } else if (typeof r.photos === "string") {
+            try {
+              const parsed = JSON.parse(r.photos);
+              parsedPhotos = Array.isArray(parsed) ? parsed : (typeof parsed === "string" ? JSON.parse(parsed) : []);
+            } catch {
+              parsedPhotos = [];
+            }
+          }
+          return {
+            ...r,
+            photos: parsedPhotos
+          };
+        });
         if (mapped.length > 0) {
           setReviews(mapped);
         }
@@ -305,7 +318,7 @@ export function Reviews() {
             className="text-3xl md:text-5xl font-bold"
             style={{ color: "hsl(43,80%,92%)", textShadow: "0 0 60px rgba(232,87,58,0.25)" }}
           >
-            Loved by 10,000+ Couples 💕
+            Loved by Couples 💕
           </motion.h2>
         </div>
 
@@ -315,7 +328,7 @@ export function Reviews() {
           <div className="pointer-events-none absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-[hsl(204,46%,9%)] to-transparent z-20" />
           <div className="pointer-events-none absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-[hsl(204,46%,9%)] to-transparent z-20" />
 
-          <div className="animate-marquee-left-to-right flex gap-6 hover:[animation-play-state:paused] cursor-pointer py-4">
+          <div className="animate-marquee-right-to-left flex gap-6 hover:[animation-play-state:paused] cursor-pointer py-4">
             {[...reviews, ...reviews].map((review, i) => {
               const glowColor = review.glowColor || "rgba(232,196,90,0.22)";
               const borderColor = review.borderColor || "rgba(232,196,90,0.18)";
@@ -327,11 +340,9 @@ export function Reviews() {
                   key={i}
                   className="w-[360px] shrink-0 relative p-8 rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.03] hover:-translate-y-1"
                   style={{
-                    background: "rgba(18,40,55,0.65)",
-                    backdropFilter: "blur(24px) saturate(180%)",
-                    WebkitBackdropFilter: "blur(24px) saturate(180%)",
+                    background: "rgba(16,34,46,0.95)",
                     border: `1px solid ${borderColor}`,
-                    boxShadow: `0 4px 32px rgba(0,0,0,0.4), 0 0 40px ${glowColorSoft}, inset 0 1px 0 rgba(232,196,90,0.12)`,
+                    boxShadow: `0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(232,196,90,0.08)`,
                   }}
                 >
                   <div
@@ -347,7 +358,7 @@ export function Reviews() {
                       </svg>
                     ))}
                   </div>
-                  {review.photos && review.photos.length > 0 && (
+                  {Array.isArray(review.photos) && review.photos.length > 0 && (
                     <div className="flex gap-2 mb-4">
                       {review.photos.map((photo: string, k: number) => (
                         <div key={k} className="relative w-16 h-16 rounded-lg overflow-hidden border" style={{ borderColor: "rgba(232,196,90,0.15)" }}>

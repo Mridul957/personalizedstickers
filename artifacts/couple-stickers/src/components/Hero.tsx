@@ -118,47 +118,6 @@ export function Hero() {
       >
         Upload your favorite couple photo and create personalized romantic sticker sheets that feel truly yours.
       </motion.p>
-
-      {/* CTAs */}
-      <motion.div
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, delay: 0.8 }}
-        className="flex flex-col sm:flex-row items-center justify-center gap-3"
-      >
-        <Link href="/create">
-          <motion.button
-            whileHover={{ scale: 1.06, y: -2 }}
-            whileTap={{ scale: 0.97 }}
-            className="rounded-full text-base px-9 h-12 font-bold cursor-pointer"
-            style={{
-              background: "linear-gradient(135deg, rgba(43,170,143,0.8), rgba(43,170,143,0.5))",
-              backdropFilter: "blur(20px)",
-              border: "1px solid rgba(43,170,143,0.5)",
-              boxShadow: "0 0 30px rgba(43,170,143,0.4), 0 4px 20px rgba(0,0,0,0.3), inset 0 1px 0 rgba(232,196,90,0.3)",
-              color: "hsl(43,80%,96%)",
-            }}
-          >
-            Select Your Stickers 🎨
-          </motion.button>
-        </Link>
-        <Link href="/create">
-          <motion.button
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.97 }}
-            className="rounded-full text-base px-9 h-12 font-semibold cursor-pointer"
-            style={{
-              background: "rgba(29,58,74,0.45)",
-              backdropFilter: "blur(20px)",
-              border: "1px solid rgba(232,196,90,0.25)",
-              boxShadow: "inset 0 1px 0 rgba(232,196,90,0.15)",
-              color: "rgba(232,196,90,0.8)",
-            }}
-          >
-            View Samples
-          </motion.button>
-        </Link>
-      </motion.div>
     </section>
   );
 }

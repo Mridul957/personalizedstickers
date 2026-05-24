@@ -20,16 +20,15 @@ export function Footer() {
             style={{ color: "hsl(43,80%,92%)" }}
             whileHover={{ opacity: 0.75 }}
           >
-            <Link href="/">Ours. 💖</Link>
+            <Link href="/">Match Stickers 💖</Link>
           </motion.span>
           <p className="mt-1 text-sm" style={{ color: "rgba(232,196,90,0.35)" }}>Premium couple stickers.</p>
         </div>
         <div className="flex gap-6 text-sm" style={{ color: "rgba(43,170,143,0.5)" }}>
-          <a href="#" className="hover:text-[rgba(43,170,143,0.9)] transition-colors">Instagram</a>
-          <a href="#" className="hover:text-[rgba(43,170,143,0.9)] transition-colors">TikTok</a>
+          <a href="https://www.instagram.com/matchmade.stickers?igsh=bjQ2Y2MxYzdqc2cw&utm_source=qr" target="_blank" rel="noopener noreferrer" className="hover:text-[rgba(43,170,143,0.9)] transition-colors">Instagram</a>
           <Link href="/contact" className="hover:text-[rgba(43,170,143,0.9)] transition-colors cursor-pointer">Support</Link>
         </div>
-        <p className="text-xs" style={{ color: "rgba(232,196,90,0.25)" }}>© 2026 Ours. All rights reserved.</p>
+        <p className="text-xs" style={{ color: "rgba(232,196,90,0.25)" }}>© 2026 Match Stickers. All rights reserved.</p>
       </div>
     </footer>
   );

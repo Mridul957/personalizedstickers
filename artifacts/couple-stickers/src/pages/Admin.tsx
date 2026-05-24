@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { useStickers, fileToSquareDataUrl, type Sticker, type Tag } from "@/hooks/useStickers";
 
-type NavSection = "stickers" | "orders" | "reviews" | "inquiries" | "analytics" | "settings";
+type NavSection = "stickers" | "orders" | "reviews" | "inquiries" | "analytics" | "settings" | "coupons";
 
 const ALL_TAGS: Tag[] = [
   "Romance", "Cozy", "Cute", "Playful", "Emotional", "Classic", "Trending", "Soft Love",
@@ -43,7 +43,7 @@ export default function Admin() {
   // Password lock state
   const [authenticated, setAuthenticated] = useState<boolean>(() => {
     try {
-      return sessionStorage.getItem("ours_admin_auth") === "true";
+      return sessionStorage.getItem("matchstickers_admin_auth") === "true";
     } catch {
       return false;
     }
@@ -74,7 +74,9 @@ export default function Admin() {
 
   // Database models state
   const [allReviews, setAllReviews] = useState<any[]>([]);
+  const [reviewFilter, setReviewFilter] = useState<"all" | "visible" | "moderated">("all");
   const [orders, setOrders]         = useState<any[]>([]);
+  const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
   const [zoomPhoto, setZoomPhoto]   = useState<string | null>(null);
   const [orderTab, setOrderTab]     = useState<"all" | "completed" | "packed" | "shipped" | "delivered">("all");
 
@@ -86,6 +88,13 @@ export default function Admin() {
   // Invoicing rules states
   const [adminStickerPrice, setAdminStickerPrice] = useState(40);
   const [adminBillDiscount, setAdminBillDiscount] = useState(0);
+  const [adminAnnouncementEnabled, setAdminAnnouncementEnabled] = useState(false);
+  const [adminAnnouncementText, setAdminAnnouncementText] = useState("");
+
+  // Coupons states
+  const [coupons, setCoupons]                   = useState<any[]>([]);
+  const [couponCodeForm, setCouponCodeForm]     = useState("");
+  const [couponDiscountForm, setCouponDiscountForm] = useState<number>(10);
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,7 +106,9 @@ export default function Admin() {
       },
       body: JSON.stringify({
         stickerPrice: adminStickerPrice,
-        billDiscount: adminBillDiscount
+        billDiscount: adminBillDiscount,
+        announcementEnabled: adminAnnouncementEnabled,
+        announcementText: adminAnnouncementText
       })
     })
       .then(res => {
@@ -107,11 +118,13 @@ export default function Admin() {
       .then(data => {
         setAdminStickerPrice(data.stickerPrice);
         setAdminBillDiscount(data.billDiscount);
-        showToast("✅ Billing rules saved successfully");
+        setAdminAnnouncementEnabled(data.announcementEnabled || false);
+        setAdminAnnouncementText(data.announcementText || "");
+        showToast("✅ Global settings saved successfully");
       })
       .catch(err => {
         console.error("Error saving settings:", err);
-        showToast("❌ Failed to save billing rules");
+        showToast("❌ Failed to save global settings");
       });
   };
 
@@ -140,10 +153,23 @@ export default function Admin() {
         return res.json();
       })
       .then(data => {
-        const mapped = data.map((r: any) => ({
-          ...r,
-          photos: typeof r.photos === "string" ? JSON.parse(r.photos) : (r.photos || [])
-        }));
+        const mapped = data.map((r: any) => {
+          let parsedPhotos = [];
+          if (Array.isArray(r.photos)) {
+            parsedPhotos = r.photos;
+          } else if (typeof r.photos === "string") {
+            try {
+              const parsed = JSON.parse(r.photos);
+              parsedPhotos = Array.isArray(parsed) ? parsed : (typeof parsed === "string" ? JSON.parse(parsed) : []);
+            } catch {
+              parsedPhotos = [];
+            }
+          }
+          return {
+            ...r,
+            photos: parsedPhotos
+          };
+        });
         setAllReviews(mapped);
       })
       .catch(err => console.error("Failed to load reviews:", err));
@@ -157,11 +183,37 @@ export default function Admin() {
         return res.json();
       })
       .then(data => {
-        const mapped = data.map((o: any) => ({
-          ...o,
-          stickers: typeof o.stickers === "string" ? JSON.parse(o.stickers) : (o.stickers || []),
-          photos: typeof o.photos === "string" ? JSON.parse(o.photos) : (o.photos || [])
-        }));
+        const mapped = data.map((o: any) => {
+          let parsedStickers = [];
+          if (Array.isArray(o.stickers)) {
+            parsedStickers = o.stickers;
+          } else if (typeof o.stickers === "string") {
+            try {
+              const parsed = JSON.parse(o.stickers);
+              parsedStickers = Array.isArray(parsed) ? parsed : (typeof parsed === "string" ? JSON.parse(parsed) : []);
+            } catch {
+              parsedStickers = [];
+            }
+          }
+
+          let parsedPhotos = [];
+          if (Array.isArray(o.photos)) {
+            parsedPhotos = o.photos;
+          } else if (typeof o.photos === "string") {
+            try {
+              const parsed = JSON.parse(o.photos);
+              parsedPhotos = Array.isArray(parsed) ? parsed : (typeof parsed === "string" ? JSON.parse(parsed) : []);
+            } catch {
+              parsedPhotos = [];
+            }
+          }
+
+          return {
+            ...o,
+            stickers: parsedStickers,
+            photos: parsedPhotos
+          };
+        });
         setOrders(mapped);
       })
       .catch(err => console.error("Failed to load orders:", err));
@@ -202,9 +254,24 @@ export default function Admin() {
         if (data) {
           setAdminStickerPrice(data.stickerPrice || 40);
           setAdminBillDiscount(data.billDiscount || 0);
+          setAdminAnnouncementEnabled(data.announcementEnabled || false);
+          setAdminAnnouncementText(data.announcementText || "");
         }
       })
       .catch(err => console.error("Failed to load pricing settings:", err));
+
+    // Fetch coupons
+    fetch("/api/coupons/admin", {
+      headers: { "x-admin-password": "8523" }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to fetch coupons");
+        return res.json();
+      })
+      .then(data => {
+        setCoupons(data);
+      })
+      .catch(err => console.error("Failed to load coupons:", err));
   };
 
   const handleUpdateCallbackStatus = (id: number, nextStatus: string) => {
@@ -230,6 +297,81 @@ export default function Admin() {
       });
   };
 
+  const handleCreateCoupon = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!couponCodeForm.trim()) return;
+    const code = couponCodeForm.toUpperCase().trim();
+    const discountPct = Number(couponDiscountForm);
+    if (isNaN(discountPct) || discountPct < 1 || discountPct > 100) {
+      showToast("❌ Discount percentage must be between 1 and 100");
+      return;
+    }
+
+    fetch("/api/coupons/admin", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-password": "8523"
+      },
+      body: JSON.stringify({ code, discountPct, active: true })
+    })
+      .then(res => {
+        if (!res.ok) {
+          return res.json().then(err => { throw new Error(err.error || "Failed to create coupon"); });
+        }
+        return res.json();
+      })
+      .then(newCoupon => {
+        setCoupons(prev => [newCoupon, ...prev]);
+        setCouponCodeForm("");
+        setCouponDiscountForm(10);
+        showToast(`🎟️ Coupon ${code} created successfully`);
+      })
+      .catch(err => {
+        console.error("Error creating coupon:", err);
+        showToast(`❌ ${err.message || "Failed to create coupon"}`);
+      });
+  };
+
+  const handleToggleCoupon = (id: number, currentActive: boolean) => {
+    fetch(`/api/coupons/admin/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-password": "8523"
+      },
+      body: JSON.stringify({ active: !currentActive })
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to update coupon status");
+        return res.json();
+      })
+      .then(updated => {
+        setCoupons(prev => prev.map(c => c.id === id ? { ...c, active: updated.active } : c));
+        showToast(updated.active ? "🎟️ Coupon activated ✅" : "🎟️ Coupon deactivated 🔒");
+      })
+      .catch(err => {
+        console.error("Error updating coupon:", err);
+        showToast("❌ Error updating coupon status");
+      });
+  };
+
+  const handleDeleteCoupon = (id: number) => {
+    fetch(`/api/coupons/admin/${id}`, {
+      method: "DELETE",
+      headers: { "x-admin-password": "8523" }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to delete coupon");
+        setCoupons(prev => prev.filter(c => c.id !== id));
+        showToast("🗑️ Coupon deleted successfully");
+      })
+      .catch(err => {
+        console.error("Error deleting coupon:", err);
+        showToast("❌ Error deleting coupon");
+      });
+  };
+
   useEffect(() => {
     fetchAdminData();
   }, [authenticated]);
@@ -238,7 +380,7 @@ export default function Admin() {
   const handleAuthSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (passcode === "8523") {
-      sessionStorage.setItem("ours_admin_auth", "true");
+      sessionStorage.setItem("matchstickers_admin_auth", "true");
       setAuthenticated(true);
       setAuthError(false);
     } else {
@@ -318,7 +460,7 @@ export default function Admin() {
           shipped: "Shipped 🚚",
           delivered: "Delivered ✅"
         };
-        showToast(`Order #OURS-${orderId} status updated to ${labels[nextStatus] || nextStatus}`);
+        showToast(`Order #MMS-${orderId} status updated to ${labels[nextStatus] || nextStatus}`);
       })
       .catch(err => {
         console.error("Error updating status:", err);
@@ -329,7 +471,7 @@ export default function Admin() {
   const downloadSinglePhoto = (photoUrl: string, orderId: number, index: number) => {
     const link = document.createElement("a");
     link.href = photoUrl;
-    link.download = `ours_order_${orderId}_photo_${index + 1}.png`;
+    link.download = `matchstickers_order_${orderId}_photo_${index + 1}.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -495,7 +637,7 @@ export default function Admin() {
       <div className="w-60 flex-shrink-0 flex flex-col py-6 px-4 sticky top-0 h-screen overflow-y-auto"
         style={{ background: "rgba(10,24,34,0.95)", borderRight: "1px solid rgba(43,170,143,0.15)", backdropFilter: "blur(28px)" }}>
         <div className="mb-8 px-2">
-          <a href="/"><span className="text-xl font-black tracking-tighter" style={{ color: "hsl(43,80%,92%)" }}>Ours.</span></a>
+          <a href="/"><span className="text-xl font-black tracking-tighter" style={{ color: "hsl(43,80%,92%)" }}>Match Stickers</span></a>
           <span className="block text-xs font-semibold mt-0.5" style={{ color: "rgba(43,170,143,0.6)" }}>Admin Dashboard</span>
         </div>
         
@@ -503,6 +645,7 @@ export default function Admin() {
           {([
             { id: "stickers", label: "Stickers Manager", icon: "🎨" },
             { id: "orders", label: "Orders Manager", icon: "📦" },
+            { id: "coupons", label: "Coupons Manager", icon: "🎟️" },
             { id: "reviews", label: "Reviews Manager", icon: "💬" },
             { id: "inquiries", label: "Inquiries 💌", icon: "✉️" },
             { id: "analytics", label: "Analytics", icon: "📊" },
@@ -524,11 +667,7 @@ export default function Admin() {
         </nav>
         
         <div className="mt-auto pt-6 border-t" style={{ borderColor: "rgba(43,170,143,0.12)" }}>
-          <div className="px-4 py-3 rounded-xl mb-3" style={{ background: "rgba(43,170,143,0.08)", border: "1px solid rgba(43,170,143,0.15)" }}>
-            <p className="text-xs" style={{ color: "rgba(43,170,143,0.5)" }}>Active Stickers</p>
-            <p className="text-3xl font-black mt-0.5" style={{ color: "hsl(43,80%,90%)" }}>{enabledStickers} / {totalStickers}</p>
-          </div>
-          <button onClick={() => { sessionStorage.removeItem("ours_admin_auth"); setAuthenticated(false); }}
+          <button onClick={() => { sessionStorage.removeItem("matchstickers_admin_auth"); setAuthenticated(false); }}
             className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold hover:opacity-80 transition-opacity w-full border"
             style={{ background: "rgba(232,87,58,0.08)", borderColor: "rgba(232,87,58,0.25)", color: "rgba(232,87,58,0.85)" }}>
             🔒 Log Out Admin
@@ -546,6 +685,7 @@ export default function Admin() {
               {{ 
                  stickers: "Stickers Manager", 
                  orders: "Orders Manager", 
+                 coupons: "Coupons Manager",
                  reviews: "Reviews Manager", 
                  inquiries: "Inquiries & Callbacks",
                  analytics: "Analytics Overview", 
@@ -556,6 +696,7 @@ export default function Admin() {
               {{ 
                  stickers: "Add, edit, reorder and manage your sticker library — changes appear on /create instantly",
                  orders: "Track checkout sheet transactions, buyer details, and retrieve uploaded photo files",
+                 coupons: "Create and manage promotional discount codes to boost conversions and campaigns",
                  reviews: "Approve customer feedbacks, toggle home page visibility, and change rank priority",
                  inquiries: "Manage contact form messages and telephone callback request queues",
                  analytics: "Stickers library statistics", 
@@ -575,7 +716,7 @@ export default function Admin() {
               + Add Sticker
             </motion.button>
           )}
-          {(nav === "orders" || nav === "reviews" || nav === "inquiries") && (
+          {(nav === "orders" || nav === "reviews" || nav === "inquiries" || nav === "coupons") && (
             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }} onClick={fetchAdminData}
               className="rounded-xl px-5 h-9 text-xs font-bold cursor-pointer flex items-center gap-1.5 border"
               style={{
@@ -854,241 +995,320 @@ export default function Admin() {
                 })}
               </div>
 
+              {/* Table Search & Controls */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm" style={{ color: "rgba(43,170,143,0.45)" }}>🔍</span>
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search by customer name, email, or shipping address..."
+                    className="w-full rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none"
+                    style={{ background: "rgba(29,58,74,0.5)", border: "1px solid rgba(43,170,143,0.2)", color: "hsl(43,80%,90%)" }}
+                  />
+                  {search && (
+                    <button onClick={() => setSearch("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-xs cursor-pointer"
+                      style={{ color: "rgba(43,170,143,0.5)" }}>✕</button>
+                  )}
+                </div>
+              </div>
+
               {orders.length === 0 ? (
                 <div className="py-24 text-center rounded-2xl" style={GLASS}>
                   <p className="text-4xl mb-2">📦</p>
                   <p className="text-sm font-semibold" style={{ color: "rgba(43,170,143,0.5)" }}>No customer orders placed yet.</p>
                 </div>
-              ) : orders.filter(o => orderTab === "all" || o.status === orderTab).length === 0 ? (
-                <div className="py-24 text-center rounded-2xl" style={GLASS}>
-                  <p className="text-4xl mb-2">🔍</p>
-                  <p className="text-sm font-semibold" style={{ color: "rgba(43,170,143,0.5)" }}>
-                    No orders in the "{
-                      {
-                        all: "All",
-                        completed: "Received",
-                        packed: "Packed",
-                        shipped: "Shipped",
-                        delivered: "Delivered"
-                      }[orderTab]
-                    }" category.
-                  </p>
-                </div>
               ) : (
-                <div className="grid gap-6">
-                  {orders
-                    .filter(o => orderTab === "all" || o.status === orderTab)
-                    .map((order) => {
-                      const statusConfig = {
-                        completed: { label: "Received", color: "#3b82f6", bg: "rgba(59,130,246,0.12)", border: "rgba(59,130,246,0.25)", sidebarBg: "rgba(59,130,246,0.6)" },
-                        packed: { label: "Packed", color: "#f59e0b", bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.25)", sidebarBg: "rgba(245,158,11,0.6)" },
-                        shipped: { label: "Shipped", color: "#a78bfa", bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.25)", sidebarBg: "rgba(167,139,250,0.6)" },
-                        delivered: { label: "Delivered", color: "#10b981", bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.25)", sidebarBg: "rgba(16,185,129,0.6)" }
-                      }[order.status as "completed" | "packed" | "shipped" | "delivered"] || { label: order.status, color: "#94a3b8", bg: "rgba(29,58,74,0.12)", border: "rgba(29,58,74,0.25)", sidebarBg: "rgba(43,170,143,0.7)" };
+                <div className="rounded-2xl overflow-hidden border" style={{ borderColor: "rgba(43,170,143,0.15)", ...GLASS }}>
+                  {/* Table Header */}
+                  <div className="grid items-center text-xs font-semibold px-6 py-4 select-none"
+                    style={{
+                      gridTemplateColumns: "6.5rem 10.5rem 1fr 6rem 5.5rem 4.5rem 8rem",
+                      color: "rgba(43,170,143,0.6)",
+                      borderBottom: "1px solid rgba(43,170,143,0.15)",
+                      background: "rgba(10,24,34,0.5)"
+                    }}>
+                    <span>Order ID</span>
+                    <span>Date & Time</span>
+                    <span>Customer Details</span>
+                    <span>Stickers</span>
+                    <span>Total</span>
+                    <span>Receipt</span>
+                    <span className="text-center">Status</span>
+                  </div>
 
-                      return (
-                        <div key={order.id} className="rounded-2xl p-6 relative overflow-hidden" style={GLASS}>
-                          <div className="absolute top-0 left-0 bottom-0 w-1.5 transition-all duration-300" style={{ background: statusConfig.sidebarBg }} />
-                          
-                          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 mb-4 border-b" style={{ borderColor: "rgba(43,170,143,0.12)" }}>
-                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                              <span className="font-black text-sm" style={{ color: statusConfig.color }}>#OURS-{order.id}</span>
-                              <span className="text-[11px]" style={{ color: "rgba(232,196,90,0.4)" }}>
-                                Ordered on {new Date(order.createdAt).toLocaleString()}
-                              </span>
-                            </div>
-                            <div className="flex flex-wrap items-center gap-3">
-                              {/* Status Dropdown */}
+                  {/* Table Body */}
+                  <div className="divide-y divide-white/5">
+                    {orders
+                      .filter(o => orderTab === "all" || o.status === orderTab)
+                      .filter(o => 
+                        !search ||
+                        o.buyerName.toLowerCase().includes(search.toLowerCase()) ||
+                        o.buyerEmail.toLowerCase().includes(search.toLowerCase()) ||
+                        (o.buyerMobile && o.buyerMobile.includes(search)) ||
+                        (o.buyerAddress && o.buyerAddress.toLowerCase().includes(search.toLowerCase()))
+                      )
+                      .map((order, i) => {
+                        const isExpanded = expandedOrderId === order.id;
+                        const statusConfig = {
+                          completed: { label: "Received", color: "#3b82f6", bg: "rgba(59,130,246,0.12)", border: "rgba(59,130,246,0.25)", sidebarBg: "rgba(59,130,246,0.6)" },
+                          packed: { label: "Packed", color: "#f59e0b", bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.25)", sidebarBg: "rgba(245,158,11,0.6)" },
+                          shipped: { label: "Shipped", color: "#a78bfa", bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.25)", sidebarBg: "rgba(167,139,250,0.6)" },
+                          delivered: { label: "Delivered", color: "#10b981", bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.25)", sidebarBg: "rgba(16,185,129,0.6)" }
+                        }[order.status as "completed" | "packed" | "shipped" | "delivered"] || { label: order.status, color: "#94a3b8", bg: "rgba(29,58,74,0.12)", border: "rgba(29,58,74,0.25)", sidebarBg: "rgba(43,170,143,0.7)" };
+
+                        return (
+                          <div key={order.id} className="transition-colors duration-150" style={{ background: isExpanded ? "rgba(43,170,143,0.02)" : "transparent" }}>
+                            {/* Expandable Primary Row */}
+                            <div
+                              onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
+                              className="grid items-center px-6 py-4.5 cursor-pointer hover:bg-white/5 transition-colors"
+                              style={{
+                                gridTemplateColumns: "6.5rem 10.5rem 1fr 6rem 5.5rem 4.5rem 8rem",
+                              }}
+                            >
                               <div className="flex items-center gap-2">
-                                <span className="text-[10px] uppercase font-bold tracking-wider" style={{ color: "rgba(43,170,143,0.5)" }}>Status:</span>
-                                <select
-                                  value={order.status}
-                                  onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
-                                  className="rounded-lg px-2.5 py-1 text-xs font-bold outline-none cursor-pointer border"
-                                  style={{
-                                    background: "rgba(29,58,74,0.65)",
-                                    borderColor: "rgba(43,170,143,0.25)",
-                                    color: "hsl(43,80%,90%)"
-                                  }}
-                                >
-                                  <option value="completed">Received</option>
-                                  <option value="packed" disabled={!order.receiptPhoto}>
-                                    Packed {!order.receiptPhoto ? "🔒 (Awaiting Receipt)" : ""}
-                                  </option>
-                                  <option value="shipped">Shipped</option>
-                                  <option value="delivered">Delivered</option>
-                                </select>
+                                <span className="text-[10px] text-teal-400/50">{isExpanded ? "▼" : "▶"}</span>
+                                 <span className="font-extrabold text-sm" style={{ color: statusConfig.color }}>#MMS-{order.id}</span>
                               </div>
-
-                              {/* Static status display */}
-                              <span className="text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider transition-colors duration-300"
-                                style={{ background: statusConfig.bg, color: statusConfig.color, border: `1px solid ${statusConfig.border}` }}>
-                                {statusConfig.label}
+                              <span className="text-xs text-white/60">
+                                {new Date(order.createdAt).toLocaleString()}
                               </span>
-
-                              <span className="text-lg font-black" style={{ color: "hsl(43,80%,90%)" }}>₹{order.amount}</span>
-                            </div>
-                          </div>
-
-                          <div className="grid md:grid-cols-4 gap-6">
-                            {/* Buyer Info */}
-                            <div>
-                              <h4 className="text-[10px] uppercase font-bold tracking-wider mb-2" style={{ color: "rgba(43,170,143,0.6)" }}>Customer Details</h4>
-                              <p className="text-sm font-bold text-white/90">{order.buyerName}</p>
-                              <a href={`mailto:${order.buyerEmail}`} className="text-xs hover:underline mt-1.5 block" style={{ color: "rgba(232,196,90,0.6)" }}>
-                                📧 {order.buyerEmail}
-                              </a>
-                              {order.buyerMobile && (
-                                <a href={`tel:${order.buyerMobile}`} className="text-xs hover:underline mt-1.5 block text-white/85">
-                                  📞 {order.buyerMobile}
-                                </a>
-                              )}
-                              {order.buyerAddress && (
-                                <div className="text-xs mt-3 text-white/70 leading-relaxed bg-black/25 p-2.5 rounded-xl border border-white/5 whitespace-pre-wrap">
-                                  📍 <span className="font-bold text-amber-300/90">Shipping Address:</span><br />
-                                  {order.buyerAddress}
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Selected Stickers */}
-                            <div>
-                              <h4 className="text-[10px] uppercase font-bold tracking-wider mb-2" style={{ color: "rgba(43,170,143,0.6)" }}>
-                                Selected Stickers ({order.stickers.length})
-                              </h4>
-                              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
-                                {order.stickers.map((sid: number, k: number) => {
-                                  const s = stickers.find(st => st.id === sid);
-                                  return (
-                                    <div key={k} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs"
-                                      style={{ background: "rgba(29,58,74,0.45)", border: "1px solid rgba(43,170,143,0.15)" }}>
-                                      <span>{s?.emoji || "✨"}</span>
-                                      <span className="text-white/80 font-medium truncate max-w-[80px]">{s?.name || `Sticker #${sid}`}</span>
-                                    </div>
-                                  );
-                                })}
+                              <div className="min-w-0 pr-4">
+                                <p className="text-sm font-bold text-white/95 truncate">{order.buyerName}</p>
+                                <p className="text-[11px] truncate" style={{ color: "rgba(232,196,90,0.45)" }}>{order.buyerEmail}</p>
                               </div>
-                            </div>
-
-                            {/* Uploaded High-Res Photos */}
-                            <div>
-                              <div className="flex items-center justify-between mb-2">
-                                <h4 className="text-[10px] uppercase font-bold tracking-wider" style={{ color: "rgba(43,170,143,0.6)" }}>
-                                  Uploaded Photos ({order.photos.length})
-                                </h4>
-                                {order.photos && order.photos.length > 0 && (
-                                  <button
-                                    onClick={() => downloadAllPhotos(order.photos, order.id)}
-                                    className="text-[10px] font-bold px-2 py-0.5 rounded border flex items-center gap-1 hover:bg-emerald-500/10 cursor-pointer"
-                                    style={{
-                                      background: "rgba(16,185,129,0.05)",
-                                      borderColor: "rgba(16,185,129,0.25)",
-                                      color: "#10b981"
-                                    }}
-                                  >
-                                    📥 Download All
-                                  </button>
-                                )}
-                              </div>
-                              <div className="flex gap-2 overflow-x-auto pb-1.5">
-                                {order.photos.map((photo: string, pIndex: number) => (
-                                  <div key={pIndex} className="relative group flex-shrink-0">
-                                    <motion.div
-                                      whileHover={{ scale: 1.05 }}
-                                      onClick={() => setZoomPhoto(photo)}
-                                      className="w-14 h-14 rounded-lg overflow-hidden border flex-shrink-0 cursor-zoom-in"
-                                      style={{ borderColor: "rgba(43,170,143,0.3)" }}>
-                                      <img src={photo} alt="Customer couple photo" className="w-full h-full object-cover" />
-                                    </motion.div>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        downloadSinglePhoto(photo, order.id, pIndex);
-                                      }}
-                                      className="absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full flex items-center justify-center bg-emerald-500 hover:bg-emerald-600 border border-emerald-400 text-white transition-all shadow-md cursor-pointer opacity-0 group-hover:opacity-100 z-10 text-[10px]"
-                                      title="Download photo"
-                                    >
-                                      📥
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Payment Receipt */}
-                            <div>
-                              <h4 className="text-[10px] uppercase font-bold tracking-wider mb-2" style={{ color: "rgba(43,170,143,0.6)" }}>
-                                Payment Receipt
-                              </h4>
-                              {order.receiptPhoto ? (
-                                <div className="relative group flex-shrink-0 w-fit">
-                                  <motion.div
-                                    whileHover={{ scale: 1.05 }}
-                                    onClick={() => setZoomPhoto(order.receiptPhoto)}
-                                    className="w-14 h-14 rounded-lg overflow-hidden border flex-shrink-0 cursor-zoom-in bg-white/5 flex items-center justify-center"
-                                    style={{ borderColor: "rgba(232,196,90,0.3)" }}>
-                                    <img src={order.receiptPhoto} alt="Payment Receipt" className="w-full h-full object-cover" />
-                                  </motion.div>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      downloadSinglePhoto(order.receiptPhoto, order.id, 99);
-                                    }}
-                                    className="absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full flex items-center justify-center bg-amber-500 hover:bg-amber-600 border border-amber-400 text-white transition-all shadow-md cursor-pointer opacity-0 group-hover:opacity-100 z-10 text-[10px]"
-                                    title="Download receipt"
-                                  >
-                                    📥
-                                  </button>
-                                </div>
-                              ) : (
-                                <span className="text-xs text-white/35 italic block py-4">No receipt uploaded</span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Confirm & Pack Action Banner */}
-                          {order.status === "completed" && (
-                            <div className="mt-6 pt-5 border-t flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" style={{ borderColor: "rgba(43,170,143,0.12)" }}>
-                              <div className="flex items-center gap-2">
-                                {!order.receiptPhoto ? (
-                                  <span className="text-xs font-semibold text-amber-400 flex items-center gap-1.5">
-                                    ⚠️ Awaiting customer payment receipt upload to unlock packing.
-                                  </span>
-                                ) : (
-                                  <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
-                                    ✅ Payment receipt uploaded. Ready to confirm and pack order.
+                              <span className="text-xs font-semibold text-white/80">
+                                {order.stickers.length} Stickers
+                              </span>
+                              <div className="flex flex-col items-start justify-center">
+                                {order.discountAmount > 0 && (
+                                  <span className="text-[10px] line-through text-white/35 font-normal">
+                                    ₹{order.amount + order.discountAmount}
                                   </span>
                                 )}
+                                <span className="text-sm font-black text-amber-300">
+                                  ₹{order.amount}
+                                </span>
                               </div>
-                              
-                              <motion.button
-                                whileHover={order.receiptPhoto ? { scale: 1.03 } : {}}
-                                whileTap={order.receiptPhoto ? { scale: 0.97 } : {}}
-                                disabled={!order.receiptPhoto}
-                                onClick={() => handleUpdateStatus(order.id, "packed")}
-                                className="px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all duration-300 shadow-md cursor-pointer disabled:cursor-not-allowed"
-                                style={{
-                                  background: order.receiptPhoto
-                                    ? "linear-gradient(135deg, rgba(16,185,129,0.9), rgba(43,170,143,0.85))"
-                                    : "rgba(255,255,255,0.05)",
-                                  border: order.receiptPhoto
-                                    ? "1px solid rgba(232,196,90,0.3)"
-                                    : "1px solid rgba(255,255,255,0.05)",
-                                  color: order.receiptPhoto ? "hsl(204,46%,9%)" : "rgba(255,255,255,0.25)",
-                                  boxShadow: order.receiptPhoto ? "0 4px 16px rgba(16,185,129,0.25)" : "none"
-                                }}
-                              >
+                              <div>
                                 {order.receiptPhoto ? (
-                                  <>📦 Confirm & Pack Order</>
+                                  <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs font-bold" title="Receipt Uploaded">🧾</span>
                                 ) : (
-                                  <>🔒 Confirm & Pack (Locked)</>
+                                  <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-white/5 border border-white/10 text-white/20 text-xs italic" title="No Receipt Uploaded">—</span>
                                 )}
-                              </motion.button>
+                              </div>
+                              <div className="flex justify-center">
+                                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider text-center"
+                                  style={{ background: statusConfig.bg, color: statusConfig.color, border: `1px solid ${statusConfig.border}` }}>
+                                  {statusConfig.label}
+                                </span>
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
+
+                            {/* Row Expanded Details */}
+                            <AnimatePresence>
+                              {isExpanded && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: "auto" }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  className="overflow-hidden bg-black/20"
+                                >
+                                  <div className="px-10 py-6 border-t border-b border-white/5 grid md:grid-cols-4 gap-6 text-left">
+                                    {/* Shipping & Contact info */}
+                                    <div className="space-y-3">
+                                      <h4 className="text-[10px] uppercase font-bold tracking-wider" style={{ color: "rgba(43,170,143,0.6)" }}>Customer Details</h4>
+                                      <div>
+                                        <p className="text-sm font-extrabold text-white">{order.buyerName}</p>
+                                        <a href={`mailto:${order.buyerEmail}`} className="text-xs hover:underline mt-1 block" style={{ color: "rgba(232,196,90,0.6)" }}>
+                                          📧 {order.buyerEmail}
+                                        </a>
+                                        {order.buyerMobile && (
+                                          <a href={`tel:${order.buyerMobile}`} className="text-xs hover:underline mt-1 block text-white/80">
+                                            📞 {order.buyerMobile}
+                                          </a>
+                                        )}
+                                      </div>
+                                      {order.buyerAddress && (
+                                        <div className="text-xs text-white/70 leading-relaxed bg-black/30 p-3 rounded-xl border border-white/5 whitespace-pre-wrap">
+                                          📍 <span className="font-bold text-amber-300">Shipping Address:</span><br />
+                                          {order.buyerAddress}
+                                        </div>
+                                      )}
+                                      {order.appliedCoupon && (
+                                        <div className="text-xs text-white/75 leading-relaxed bg-teal-500/10 p-3 rounded-xl border border-teal-500/20 mt-2 space-y-1.5">
+                                          <div className="flex justify-between" style={{ borderBottom: "1px dashed rgba(43,170,143,0.15)", paddingBottom: "4px" }}>
+                                            <span style={{ color: "rgba(43,170,143,0.6)" }}>Original Total:</span>
+                                            <span className="font-bold text-white/90">₹{order.amount + order.discountAmount}</span>
+                                          </div>
+                                          <div className="flex justify-between" style={{ borderBottom: "1px dashed rgba(43,170,143,0.15)", paddingBottom: "4px" }}>
+                                            <span style={{ color: "rgba(43,170,143,0.6)" }}>Coupon Used:</span>
+                                            <span className="font-mono text-white font-extrabold bg-teal-500/20 px-1.5 py-0.2 rounded text-[10px]">{order.appliedCoupon}</span>
+                                          </div>
+                                          <div className="flex justify-between" style={{ borderBottom: "1px dashed rgba(43,170,143,0.15)", paddingBottom: "4px" }}>
+                                            <span style={{ color: "rgba(43,170,143,0.6)" }}>Discount Applied:</span>
+                                            <span className="text-emerald-400 font-extrabold">-₹{order.discountAmount}</span>
+                                          </div>
+                                          <div className="flex justify-between pt-1">
+                                            <span className="font-bold text-teal-400">Final Charged:</span>
+                                            <span className="text-amber-300 font-black">₹{order.amount}</span>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Sticker Selection list */}
+                                    <div>
+                                      <h4 className="text-[10px] uppercase font-bold tracking-wider mb-2.5" style={{ color: "rgba(43,170,143,0.6)" }}>
+                                        Selected Stickers ({order.stickers.length})
+                                      </h4>
+                                      <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+                                        {order.stickers.map((sid: number, k: number) => {
+                                          const s = stickers.find(st => st.id === sid);
+                                          return (
+                                            <div key={k} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs"
+                                              style={{ background: "rgba(29,58,74,0.45)", border: "1px solid rgba(43,170,143,0.15)" }}>
+                                              <span>{s?.emoji || "✨"}</span>
+                                              <span className="text-white/80 font-medium truncate max-w-[90px]">{s?.name || `Sticker #${sid}`}</span>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+
+                                    {/* Uploaded High-Res Photos list */}
+                                    <div>
+                                      <div className="flex items-center justify-between mb-2.5">
+                                        <h4 className="text-[10px] uppercase font-bold tracking-wider" style={{ color: "rgba(43,170,143,0.6)" }}>
+                                          Customer Photos ({order.photos.length})
+                                        </h4>
+                                        {order.photos && order.photos.length > 0 && (
+                                          <button
+                                            onClick={() => downloadAllPhotos(order.photos, order.id)}
+                                            className="text-[9px] font-bold px-2 py-0.5 rounded border flex items-center gap-1 hover:bg-emerald-500/10 cursor-pointer"
+                                            style={{
+                                              background: "rgba(16,185,129,0.05)",
+                                              borderColor: "rgba(16,185,129,0.25)",
+                                              color: "#10b981"
+                                            }}
+                                          >
+                                            📥 Download All
+                                          </button>
+                                        )}
+                                      </div>
+                                      <div className="flex flex-wrap gap-2">
+                                        {order.photos.map((photo: string, pIndex: number) => (
+                                          <div key={pIndex} className="relative group">
+                                            <div
+                                              onClick={() => setZoomPhoto(photo)}
+                                              className="w-14 h-14 rounded-lg overflow-hidden border flex-shrink-0 cursor-zoom-in bg-black/40 hover:brightness-110 transition-all"
+                                              style={{ borderColor: "rgba(43,170,143,0.3)" }}>
+                                              <img src={photo} alt="Customer uploads" className="w-full h-full object-cover" />
+                                            </div>
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                downloadSinglePhoto(photo, order.id, pIndex);
+                                              }}
+                                              className="absolute -bottom-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center bg-emerald-500 hover:bg-emerald-600 border border-emerald-400 text-white transition-all shadow-md cursor-pointer opacity-0 group-hover:opacity-100 z-10 text-[9px]"
+                                              title="Download high-res photo"
+                                            >
+                                              📥
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+
+                                    {/* Receipt preview and inline Action */}
+                                    <div className="space-y-4">
+                                      <div>
+                                        <h4 className="text-[10px] uppercase font-bold tracking-wider mb-2" style={{ color: "rgba(43,170,143,0.6)" }}>
+                                          Payment Receipt
+                                        </h4>
+                                        {order.receiptPhoto ? (
+                                          <div className="relative group w-fit">
+                                            <div
+                                              onClick={() => setZoomPhoto(order.receiptPhoto)}
+                                              className="w-14 h-14 rounded-lg overflow-hidden border cursor-zoom-in bg-white/5 flex items-center justify-center hover:brightness-110 transition-all"
+                                              style={{ borderColor: "rgba(232,196,90,0.3)" }}>
+                                              <img src={order.receiptPhoto} alt="Payment Receipt" className="w-full h-full object-cover" />
+                                            </div>
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                downloadSinglePhoto(order.receiptPhoto, order.id, 99);
+                                              }}
+                                              className="absolute -bottom-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center bg-amber-500 hover:bg-amber-600 border border-amber-400 text-white transition-all shadow-md cursor-pointer opacity-0 group-hover:opacity-100 z-10 text-[9px]"
+                                              title="Download receipt image"
+                                            >
+                                              📥
+                                            </button>
+                                          </div>
+                                        ) : (
+                                          <span className="text-xs text-white/30 italic">No receipt uploaded yet</span>
+                                        )}
+                                      </div>
+
+                                      {/* Status modifier dropdown */}
+                                      <div className="pt-2">
+                                        <span className="block text-[9px] uppercase font-bold tracking-wider mb-1.5" style={{ color: "rgba(43,170,143,0.5)" }}>Update Status:</span>
+                                        <select
+                                          value={order.status}
+                                          onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
+                                          className="rounded-lg px-2.5 py-1.5 text-xs font-bold outline-none cursor-pointer border w-full sm:w-40"
+                                          style={{
+                                            background: "rgba(29,58,74,0.65)",
+                                            borderColor: "rgba(43,170,143,0.25)",
+                                            color: "hsl(43,80%,90%)"
+                                          }}
+                                        >
+                                          <option value="completed">Received</option>
+                                          <option value="packed" disabled={!order.receiptPhoto}>
+                                            Packed {!order.receiptPhoto ? "🔒 (Awaiting Payment)" : ""}
+                                          </option>
+                                          <option value="shipped">Shipped</option>
+                                          <option value="delivered">Delivered</option>
+                                        </select>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Packing confirmation row */}
+                                  {order.status === "completed" && (
+                                    <div className="px-10 py-4 bg-black/10 flex flex-wrap items-center justify-between gap-4">
+                                      <span className="text-xs font-semibold flex items-center gap-1.5" style={{ color: order.receiptPhoto ? "hsl(168, 58%, 50%)" : "hsl(43, 75%, 55%)" }}>
+                                        {order.receiptPhoto ? "✅ Receipt uploaded. Ready to confirm and pack order." : "⚠️ Awaiting customer payment receipt upload to unlock packing."}
+                                      </span>
+                                      <motion.button
+                                        whileHover={order.receiptPhoto ? { scale: 1.03 } : {}}
+                                        whileTap={order.receiptPhoto ? { scale: 0.97 } : {}}
+                                        disabled={!order.receiptPhoto}
+                                        onClick={() => handleUpdateStatus(order.id, "packed")}
+                                        className="px-4.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer disabled:cursor-not-allowed transition-all shadow-md"
+                                        style={{
+                                          background: order.receiptPhoto
+                                            ? "linear-gradient(135deg, rgba(16,185,129,0.9), rgba(43,170,143,0.85))"
+                                            : "rgba(255,255,255,0.05)",
+                                          border: order.receiptPhoto
+                                            ? "1px solid rgba(232,196,90,0.3)"
+                                            : "1px solid rgba(255,255,255,0.05)",
+                                          color: order.receiptPhoto ? "hsl(204,46%,9%)" : "rgba(255,255,255,0.25)",
+                                          boxShadow: order.receiptPhoto ? "0 4px 12px rgba(16,185,129,0.2)" : "none"
+                                        }}
+                                      >
+                                        {order.receiptPhoto ? "📦 Confirm & Pack Order" : "🔒 Confirm & Pack (Locked)"}
+                                      </motion.button>
+                                    </div>
+                                  )}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
               )}
             </div>
@@ -1097,97 +1317,213 @@ export default function Admin() {
           {/* ═══ REVIEWS MANAGER ═══ */}
           {nav === "reviews" && (
             <div className="space-y-6">
+              {/* Approval status filter bar */}
+              <div className="flex flex-wrap gap-2.5 pb-2 border-b" style={{ borderColor: "rgba(43,170,143,0.12)" }}>
+                {([
+                  { id: "all", label: "All Reviews", icon: "💬" },
+                  { id: "visible", label: "Visible / Approved", icon: "✅" },
+                  { id: "moderated", label: "Moderated / Pending", icon: "⏳" },
+                ] as const).map((tab) => {
+                  const active = reviewFilter === tab.id;
+                  const count = tab.id === "all"
+                    ? allReviews.length
+                    : tab.id === "visible"
+                      ? allReviews.filter(r => r.enabled).length
+                      : allReviews.filter(r => !r.enabled).length;
+                  return (
+                    <motion.button
+                      key={tab.id}
+                      onClick={() => setReviewFilter(tab.id)}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer transition-all duration-200"
+                      style={{
+                        background: active ? "rgba(43,170,143,0.15)" : "rgba(29,58,74,0.3)",
+                        border: active ? "1px solid rgba(43,170,143,0.3)" : "1px solid rgba(43,170,143,0.12)",
+                        color: active ? "rgba(43,170,143,0.95)" : "rgba(232,196,90,0.5)",
+                      }}
+                    >
+                      <span>{tab.icon}</span>
+                      {tab.label}
+                      <span className="ml-1.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold"
+                        style={{
+                          background: active ? "rgba(43,170,143,0.25)" : "rgba(43,170,143,0.08)",
+                          color: active ? "white" : "rgba(232,196,90,0.4)"
+                        }}
+                      >
+                        {count}
+                      </span>
+                    </motion.button>
+                  );
+                })}
+              </div>
+
+              {/* Table search & sort */}
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm" style={{ color: "rgba(43,170,143,0.45)" }}>🔍</span>
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search reviews by customer name, handle, or comment..."
+                  className="w-full rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none"
+                  style={{ background: "rgba(29,58,74,0.5)", border: "1px solid rgba(43,170,143,0.2)", color: "hsl(43,80%,90%)" }}
+                />
+                {search && (
+                  <button onClick={() => setSearch("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-xs cursor-pointer"
+                    style={{ color: "rgba(43,170,143,0.5)" }}>✕</button>
+                )}
+              </div>
+
               {allReviews.length === 0 ? (
                 <div className="py-24 text-center rounded-2xl" style={GLASS}>
                   <p className="text-4xl mb-2">💬</p>
                   <p className="text-sm font-semibold" style={{ color: "rgba(43,170,143,0.5)" }}>No customer reviews in the database.</p>
                 </div>
               ) : (
-                <div className="grid gap-4">
-                  {allReviews.map((rev) => (
-                    <div key={rev.id} className="rounded-2xl p-5" style={GLASS}>
-                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                        
-                        {/* Review Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-2">
-                            <span className="text-lg">{rev.emoji}</span>
-                            <span className="font-bold text-white/95" style={{ color: "hsl(43,80%,90%)" }}>{rev.name}</span>
-                            <span className="text-xs" style={{ color: "rgba(232,196,90,0.4)" }}>{rev.handle}</span>
-                            <span className="text-[10px]" style={{ color: "rgba(43,170,143,0.5)" }}>
-                              {new Date(rev.createdAt).toLocaleDateString()}
-                            </span>
-                          </div>
+                <div className="rounded-2xl overflow-hidden border" style={{ borderColor: "rgba(43,170,143,0.15)", ...GLASS }}>
+                  {/* Table Header */}
+                  <div className="grid items-center text-xs font-semibold px-6 py-4 select-none"
+                    style={{
+                      gridTemplateColumns: "1.5rem 10.5rem 5.5rem 1fr 6rem 8.5rem 8.5rem 3.5rem",
+                      color: "rgba(43,170,143,0.6)",
+                      borderBottom: "1px solid rgba(43,170,143,0.15)",
+                      background: "rgba(10,24,34,0.5)"
+                    }}>
+                    <span></span>
+                    <span>Reviewer</span>
+                    <span>Rating</span>
+                    <span>Review Message</span>
+                    <span>Photos</span>
+                    <span className="text-center">Priority Rank</span>
+                    <span className="text-center">Visibility Status</span>
+                    <span></span>
+                  </div>
 
-                          <div className="flex gap-1 mb-3">
-                            {[...Array(5)].map((_, j) => (
-                              <svg key={j} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={j < rev.rating ? "currentColor" : "none"} stroke="currentColor" className="w-3.5 h-3.5" style={{ color: "rgba(232,196,90,0.9)" }}>
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
-                              </svg>
-                            ))}
-                          </div>
-
-                          <p className="text-sm font-medium mb-3 italic leading-relaxed text-white/80">
-                            "{rev.text}"
-                          </p>
-
-                          {rev.photos && rev.photos.length > 0 && (
-                            <div className="flex gap-2">
-                              {rev.photos.map((photo: string, k: number) => (
-                                <motion.div
-                                  key={k}
-                                  whileHover={{ scale: 1.05 }}
-                                  onClick={() => setZoomPhoto(photo)}
-                                  className="w-12 h-12 rounded-lg overflow-hidden border cursor-zoom-in"
-                                  style={{ borderColor: "rgba(232,196,90,0.2)" }}>
-                                  <img src={photo} alt="Customer upload" className="w-full h-full object-cover" />
-                                </motion.div>
+                  {/* Table Body */}
+                  <div className="divide-y divide-white/5">
+                    {allReviews
+                      .filter(r => reviewFilter === "all" || (reviewFilter === "visible" && r.enabled) || (reviewFilter === "moderated" && !r.enabled))
+                      .filter(r => 
+                        !search ||
+                        r.name.toLowerCase().includes(search.toLowerCase()) ||
+                        r.handle.toLowerCase().includes(search.toLowerCase()) ||
+                        r.text.toLowerCase().includes(search.toLowerCase())
+                      )
+                      .map((rev) => {
+                        const isConfirm = confirmDeleteId === rev.id;
+                        return (
+                          <div
+                            key={rev.id}
+                            className="grid items-center px-6 py-4 hover:bg-white/5 transition-colors duration-150"
+                            style={{
+                              gridTemplateColumns: "1.5rem 10.5rem 5.5rem 1fr 6rem 8.5rem 8.5rem 3.5rem",
+                            }}
+                          >
+                            <span className="text-sm">{rev.emoji}</span>
+                            <div className="min-w-0 pr-4">
+                              <p className="text-sm font-bold text-white/95 truncate">{rev.name}</p>
+                              <p className="text-[11px] truncate" style={{ color: "rgba(232,196,90,0.45)" }}>{rev.handle}</p>
+                              <p className="text-[9px] text-white/30 mt-0.5">{new Date(rev.createdAt).toLocaleDateString()}</p>
+                            </div>
+                            <div className="flex gap-0.5">
+                              {[...Array(5)].map((_, j) => (
+                                <svg key={j} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={j < rev.rating ? "currentColor" : "none"} stroke="currentColor" className="w-3 h-3" style={{ color: "rgba(232,196,90,0.9)" }}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
+                                </svg>
                               ))}
                             </div>
-                          )}
-                        </div>
+                            <p className="text-xs text-white/80 leading-relaxed pr-6 italic max-h-16 overflow-y-auto pr-1 whitespace-pre-wrap">
+                              "{rev.text}"
+                            </p>
+                            <div className="flex gap-1.5 overflow-x-auto py-0.5">
+                              {Array.isArray(rev.photos) && rev.photos.length > 0 ? (
+                                rev.photos.map((photo: string, k: number) => (
+                                  <div
+                                    key={k}
+                                    onClick={() => setZoomPhoto(photo)}
+                                    className="w-10 h-10 rounded border cursor-zoom-in overflow-hidden hover:scale-105 transition-transform"
+                                    style={{ borderColor: "rgba(232,196,90,0.2)" }}
+                                  >
+                                    <img src={photo} alt="Reviews customer uploads" className="w-full h-full object-cover" />
+                                  </div>
+                                ))
+                              ) : (
+                                <span className="text-[10px] text-white/20 italic">—</span>
+                              )}
+                            </div>
 
-                        {/* Controls */}
-                        <div className="flex flex-row md:flex-col items-center justify-end gap-3 self-stretch flex-shrink-0">
-                          {/* Approval Status Toggle */}
-                          <div className="flex flex-col items-end">
-                            <span className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "rgba(43,170,143,0.5)" }}>Approval</span>
-                            <button onClick={() => handleToggleReview(rev.id, rev.enabled)}
-                              className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer w-fit border px-3 py-1.5 rounded-full"
-                              style={{
-                                background: rev.enabled ? "rgba(16,185,129,0.12)" : "rgba(232,87,58,0.12)",
-                                borderColor: rev.enabled ? "rgba(16,185,129,0.3)" : "rgba(232,87,58,0.3)",
-                                color: rev.enabled ? "#10b981" : "#ef4444"
-                              }}>
-                              <div className="w-2.5 h-2.5 rounded-full" style={{ background: rev.enabled ? "#10b981" : "#ef4444" }} />
-                              {rev.enabled ? "Visible" : "Moderated"}
-                            </button>
-                          </div>
-
-                          {/* Ranking Rank Controls */}
-                          <div className="flex flex-col items-end">
-                            <span className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "rgba(43,170,143,0.5)" }}>Priority Rank</span>
-                            <div className="flex items-center gap-2">
+                            {/* Rank Adjusters */}
+                            <div className="flex items-center justify-center gap-1.5">
                               <button onClick={() => handleRankReview(rev.id, rev.rank, "up")}
-                                className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold border hover:bg-white/5 cursor-pointer"
+                                className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold border hover:bg-white/5 cursor-pointer transition-colors"
                                 style={{ borderColor: "rgba(43,170,143,0.25)", color: "rgba(43,170,143,0.85)" }}>
                                 🔼
                               </button>
-                              <span className="text-xs font-bold px-2 py-1 rounded" style={{ background: "rgba(29,58,74,0.6)", color: "hsl(43,80%,85%)" }}>
+                              <span className="text-xs font-bold px-2 py-0.5 rounded text-center min-w-8" style={{ background: "rgba(29,58,74,0.6)", color: "hsl(43,80%,85%)" }}>
                                 {rev.rank}
                               </span>
                               <button onClick={() => handleRankReview(rev.id, rev.rank, "down")}
-                                className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold border hover:bg-white/5 cursor-pointer"
+                                className="w-6 h-6 rounded flex items-center justify-center text-xs font-bold border hover:bg-white/5 cursor-pointer transition-colors"
                                 style={{ borderColor: "rgba(43,170,143,0.25)", color: "rgba(43,170,143,0.85)" }}>
                                 🔽
                               </button>
                             </div>
-                          </div>
-                        </div>
 
-                      </div>
-                    </div>
-                  ))}
+                            {/* Visibility approvals */}
+                            <div className="flex justify-center">
+                              <button onClick={() => handleToggleReview(rev.id, rev.enabled)}
+                                className="flex items-center gap-1.5 text-[10px] font-bold uppercase cursor-pointer border px-2.5 py-1 rounded-full tracking-wider w-24 justify-center hover:brightness-110 transition-all"
+                                style={{
+                                  background: rev.enabled ? "rgba(16,185,129,0.08)" : "rgba(232,87,58,0.08)",
+                                  borderColor: rev.enabled ? "rgba(16,185,129,0.25)" : "rgba(232,87,58,0.25)",
+                                  color: rev.enabled ? "#10b981" : "#ef4444"
+                                }}>
+                                <div className="w-2 h-2 rounded-full" style={{ background: rev.enabled ? "#10b981" : "#ef4444" }} />
+                                {rev.enabled ? "Visible" : "Pending"}
+                              </button>
+                            </div>
+
+                            {/* Delete Review */}
+                            <div className="flex justify-end">
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => {
+                                  if (isConfirm) {
+                                    fetch(`/api/reviews/admin/${rev.id}`, {
+                                      method: "DELETE",
+                                      headers: { "x-admin-password": "8523" }
+                                    })
+                                      .then(res => {
+                                        if (!res.ok) throw new Error("Delete failed");
+                                        setAllReviews(prev => prev.filter(r => r.id !== rev.id));
+                                        showToast("🗑️ Review deleted successfully");
+                                      })
+                                      .catch(err => {
+                                        console.error("Error deleting review:", err);
+                                        showToast("Error deleting review");
+                                      });
+                                    setConfirmDeleteId(null);
+                                  } else {
+                                    setConfirmDeleteId(rev.id);
+                                    setTimeout(() => setConfirmDeleteId(null), 3000);
+                                  }
+                                }}
+                                className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-semibold cursor-pointer border transition-all"
+                                style={{
+                                  background: isConfirm ? "rgba(232,87,58,0.2)" : "rgba(232,87,58,0.05)",
+                                  borderColor: isConfirm ? "rgba(232,87,58,0.5)" : "rgba(232,87,58,0.2)",
+                                  color: "#ef4444"
+                                }}
+                                title={isConfirm ? "Click again to confirm delete" : "Delete Review"}
+                              >
+                                {isConfirm ? "⚠️" : "🗑️"}
+                              </motion.button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
               )}
             </div>
@@ -1210,25 +1546,58 @@ export default function Admin() {
                 ))}
               </div>
 
-              {/* Split layout: Callbacks (Left) & Messages (Right) */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                
-                {/* 📞 Callbacks Queue Card (Left - 5 cols) */}
-                <div className="lg:col-span-5 rounded-2xl p-6 space-y-4" style={GLASS}>
-                  <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: "rgba(43,170,143,0.15)" }}>
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">📞</span>
-                      <h2 className="text-lg font-black" style={{ color: "hsl(43,80%,92%)" }}>Callback Queue</h2>
+              {/* Sub Navigation Tabs for Inquiries */}
+              <div className="flex gap-4 border-b pb-2" style={{ borderColor: "rgba(43,170,143,0.12)" }}>
+                <button
+                  onClick={() => { setOrderTab("all"); setSearch(""); }}
+                  className="px-4 py-2 font-bold text-sm border-b-2 cursor-pointer transition-colors"
+                  style={{
+                    borderColor: orderTab === "all" ? "rgba(43,170,143,0.8)" : "transparent",
+                    color: orderTab === "all" ? "hsl(43,80%,92%)" : "rgba(232,196,90,0.4)"
+                  }}
+                >
+                  📞 Callbacks Queue ({callbacks.length})
+                </button>
+                <button
+                  onClick={() => { setOrderTab("completed"); setSearch(""); }}
+                  className="px-4 py-2 font-bold text-sm border-b-2 cursor-pointer transition-colors"
+                  style={{
+                    borderColor: orderTab === "completed" ? "rgba(43,170,143,0.8)" : "transparent",
+                    color: orderTab === "completed" ? "hsl(43,80%,92%)" : "rgba(232,196,90,0.4)"
+                  }}
+                >
+                  ✉️ Customer Messages ({submissions.length})
+                </button>
+              </div>
+
+              {/* Sub-tab 1: Callbacks Queue Table */}
+              {orderTab === "all" && (
+                <div className="space-y-4">
+                  {/* Controls */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm" style={{ color: "rgba(43,170,143,0.45)" }}>🔍</span>
+                      <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search callback queue by phone number..."
+                        className="w-full rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none"
+                        style={{ background: "rgba(29,58,74,0.5)", border: "1px solid rgba(43,170,143,0.2)", color: "hsl(43,80%,90%)" }}
+                      />
+                      {search && (
+                        <button onClick={() => setSearch("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-xs cursor-pointer"
+                          style={{ color: "rgba(43,170,143,0.5)" }}>✕</button>
+                      )}
                     </div>
-                    {/* Status Filter Group */}
-                    <div className="flex gap-1 bg-black/30 p-1 rounded-lg border border-white/5">
+                    {/* Status Filters */}
+                    <div className="flex gap-1.5 bg-black/25 p-1 rounded-xl border border-white/5 w-fit">
                       {(["all", "pending", "resolved"] as const).map((filter) => (
                         <button
                           key={filter}
                           onClick={() => setCallbackFilter(filter)}
-                          className="px-2.5 py-1 rounded-md text-[10px] font-bold capitalize transition-colors"
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-colors cursor-pointer"
                           style={{
-                            background: callbackFilter === filter ? "rgba(43,170,143,0.2)" : "transparent",
+                            background: callbackFilter === filter ? "rgba(43,170,143,0.15)" : "transparent",
                             color: callbackFilter === filter ? "rgba(43,170,143,0.95)" : "rgba(232,196,90,0.4)",
                           }}
                         >
@@ -1238,168 +1607,220 @@ export default function Admin() {
                     </div>
                   </div>
 
-                  <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-                    {callbacks.filter(c => callbackFilter === "all" || c.status === callbackFilter).length === 0 ? (
-                      <div className="py-12 text-center" style={{ color: "rgba(43,170,143,0.35)" }}>
-                        <p className="text-2xl mb-1">📞</p>
-                        <p className="text-xs font-semibold">No callback requests found.</p>
+                  {callbacks.length === 0 ? (
+                    <div className="py-20 text-center rounded-2xl" style={GLASS}>
+                      <p className="text-4xl mb-2">📞</p>
+                      <p className="text-sm font-semibold" style={{ color: "rgba(43,170,143,0.5)" }}>No telephone callback requests yet.</p>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl overflow-hidden border" style={{ borderColor: "rgba(43,170,143,0.15)", ...GLASS }}>
+                      {/* Table Header */}
+                      <div className="grid items-center text-xs font-semibold px-6 py-4 select-none"
+                        style={{
+                          gridTemplateColumns: "5rem 12.5rem 1fr 8.5rem 6.5rem",
+                          color: "rgba(43,170,143,0.6)",
+                          borderBottom: "1px solid rgba(43,170,143,0.15)",
+                          background: "rgba(10,24,34,0.5)"
+                        }}>
+                        <span>ID</span>
+                        <span>Requested Time</span>
+                        <span>Phone Number</span>
+                        <span className="text-center">Status</span>
+                        <span className="text-right">Actions</span>
                       </div>
-                    ) : (
-                      callbacks
-                        .filter(c => callbackFilter === "all" || c.status === callbackFilter)
-                        .map((c) => {
-                          const isPending = c.status === "pending";
-                          return (
-                            <motion.div
-                              key={c.id}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              className="p-4 rounded-xl relative overflow-hidden transition-all duration-300"
-                              style={{
-                                background: isPending ? "rgba(232,196,90,0.03)" : "rgba(43,170,143,0.02)",
-                                border: isPending ? "1px solid rgba(232,196,90,0.2)" : "1px solid rgba(43,170,143,0.12)",
-                              }}
-                            >
-                              <div className="flex items-center justify-between gap-3">
-                                <div>
-                                  <a href={`tel:${c.phone}`} className="text-base font-black tracking-wide hover:underline" style={{ color: isPending ? "hsl(43,80%,90%)" : "rgba(232,196,90,0.6)" }}>
-                                    {c.phone}
-                                  </a>
-                                  <p className="text-[10px] mt-1" style={{ color: "rgba(232,196,90,0.35)" }}>
-                                    Requested: {new Date(c.createdAt).toLocaleString()}
-                                  </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+
+                      {/* Table Body */}
+                      <div className="divide-y divide-white/5">
+                        {callbacks
+                          .filter(c => callbackFilter === "all" || c.status === callbackFilter)
+                          .filter(c => !search || c.phone.includes(search))
+                          .map((c) => {
+                            const isPending = c.status === "pending";
+                            return (
+                              <div
+                                key={c.id}
+                                className="grid items-center px-6 py-3.5 hover:bg-white/5 transition-colors duration-150"
+                                style={{
+                                  gridTemplateColumns: "5rem 12.5rem 1fr 8.5rem 6.5rem",
+                                }}
+                              >
+                                <span className="text-xs font-bold text-teal-400">#CALL-{c.id}</span>
+                                <span className="text-xs text-white/50">{new Date(c.createdAt).toLocaleString()}</span>
+                                <a href={`tel:${c.phone}`} className="text-sm font-extrabold text-white/90 hover:underline hover:text-teal-400 w-fit">
+                                  📞 {c.phone}
+                                </a>
+                                <div className="flex justify-center">
+                                  <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border text-center"
                                     style={{
-                                      background: isPending ? "rgba(232,196,90,0.15)" : "rgba(43,170,143,0.15)",
-                                      color: isPending ? "rgba(232,196,90,0.9)" : "rgba(43,170,143,0.9)",
-                                      border: isPending ? "1px solid rgba(232,196,90,0.25)" : "1px solid rgba(43,170,143,0.25)"
+                                      background: isPending ? "rgba(232,196,90,0.08)" : "rgba(16,185,129,0.08)",
+                                      color: isPending ? "rgba(232,196,90,0.85)" : "#10b981",
+                                      borderColor: isPending ? "rgba(232,196,90,0.25)" : "rgba(16,185,129,0.25)"
                                     }}>
-                                    {isPending ? "⏳ Pending" : "✅ Called"}
+                                    {isPending ? "Pending ⏳" : "Resolved ✅"}
                                   </span>
+                                </div>
+                                <div className="flex justify-end">
                                   <button
                                     onClick={() => handleUpdateCallbackStatus(c.id, isPending ? "resolved" : "pending")}
-                                    className="p-1.5 rounded-lg border text-xs font-bold transition-all hover:scale-105 cursor-pointer"
-                                    title={isPending ? "Mark as Called" : "Mark as Pending"}
+                                    className="px-3 py-1 rounded-lg border text-xs font-bold cursor-pointer transition-colors hover:brightness-110"
                                     style={{
                                       background: isPending ? "rgba(43,170,143,0.1)" : "rgba(232,196,90,0.05)",
-                                      borderColor: isPending ? "rgba(43,170,143,0.35)" : "rgba(232,196,90,0.25)",
-                                      color: isPending ? "rgba(43,170,143,0.9)" : "rgba(232,196,90,0.7)"
+                                      borderColor: isPending ? "rgba(43,170,143,0.3)" : "rgba(232,196,90,0.25)",
+                                      color: isPending ? "rgba(43,170,143,0.95)" : "rgba(232,196,90,0.7)"
                                     }}
+                                    title={isPending ? "Mark as Called / Resolved" : "Revert status to Pending"}
                                   >
-                                    {isPending ? "✓" : "↩"}
+                                    {isPending ? "Resolve ✓" : "Reopen ↩"}
                                   </button>
                                 </div>
                               </div>
-                            </motion.div>
-                          );
-                        })
-                    )}
-                  </div>
-                </div>
-
-                {/* ✉️ Contact Messages (Right - 7 cols) */}
-                <div className="lg:col-span-7 rounded-2xl p-6 space-y-4" style={GLASS}>
-                  <div className="flex items-center justify-between pb-3 border-b" style={{ borderColor: "rgba(43,170,143,0.15)" }}>
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">✉️</span>
-                      <h2 className="text-lg font-black" style={{ color: "hsl(43,80%,92%)" }}>Customer Messages</h2>
+                            );
+                          })}
+                      </div>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(43,170,143,0.1)", color: "rgba(43,170,143,0.85)" }}>
-                      {submissions.length} Inboxes
-                    </span>
-                  </div>
+                  )}
+                </div>
+              )}
 
-                  {/* Messages Search */}
+              {/* Sub-tab 2: Customer Messages Table */}
+              {orderTab === "completed" && (
+                <div className="space-y-4">
+                  {/* Search message */}
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: "rgba(43,170,143,0.45)" }}>🔍</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm" style={{ color: "rgba(43,170,143,0.45)" }}>🔍</span>
                     <input
-                      type="text"
-                      placeholder="Search messages by name, email, text or subject..."
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      className="w-full rounded-xl pl-8 pr-8 py-2 text-xs outline-none"
-                      style={{ background: "rgba(29,58,74,0.4)", border: "1px solid rgba(43,170,143,0.15)", color: "hsl(43,80%,90%)" }}
+                      placeholder="Search messages by name, email, subject, or contents..."
+                      className="w-full rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none"
+                      style={{ background: "rgba(29,58,74,0.5)", border: "1px solid rgba(43,170,143,0.2)", color: "hsl(43,80%,90%)" }}
                     />
                     {search && (
-                      <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] cursor-pointer"
+                      <button onClick={() => setSearch("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-xs cursor-pointer"
                         style={{ color: "rgba(43,170,143,0.5)" }}>✕</button>
                     )}
                   </div>
 
-                  <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
-                    {submissions.filter(s => 
-                      !search || 
-                      s.name.toLowerCase().includes(search.toLowerCase()) || 
-                      (s.email && s.email.toLowerCase().includes(search.toLowerCase())) || 
-                      (s.phone && s.phone.includes(search)) || 
-                      (s.subject && s.subject.toLowerCase().includes(search.toLowerCase())) || 
-                      s.message.toLowerCase().includes(search.toLowerCase())
-                    ).length === 0 ? (
-                      <div className="py-16 text-center" style={{ color: "rgba(43,170,143,0.35)" }}>
-                        <p className="text-3xl mb-1">✉️</p>
-                        <p className="text-xs font-semibold">No messages found matching search criteria.</p>
+                  {submissions.length === 0 ? (
+                    <div className="py-20 text-center rounded-2xl" style={GLASS}>
+                      <p className="text-4xl mb-2">✉️</p>
+                      <p className="text-sm font-semibold" style={{ color: "rgba(43,170,143,0.5)" }}>No customer contact messages received yet.</p>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl overflow-hidden border" style={{ borderColor: "rgba(43,170,143,0.15)", ...GLASS }}>
+                      {/* Table Header */}
+                      <div className="grid items-center text-xs font-semibold px-6 py-4 select-none"
+                        style={{
+                          gridTemplateColumns: "1.5rem 10.5rem 13.5rem 8.5rem 1fr 4.5rem",
+                          color: "rgba(43,170,143,0.6)",
+                          borderBottom: "1px solid rgba(43,170,143,0.15)",
+                          background: "rgba(10,24,34,0.5)"
+                        }}>
+                        <span></span>
+                        <span>Date Received</span>
+                        <span>Sender Name</span>
+                        <span>Contact Method</span>
+                        <span>Message Contents</span>
+                        <span></span>
                       </div>
-                    ) : (
-                      submissions
-                        .filter(s => 
-                          !search || 
-                          s.name.toLowerCase().includes(search.toLowerCase()) || 
-                          (s.email && s.email.toLowerCase().includes(search.toLowerCase())) || 
-                          (s.phone && s.phone.includes(search)) || 
-                          (s.subject && s.subject.toLowerCase().includes(search.toLowerCase())) || 
-                          s.message.toLowerCase().includes(search.toLowerCase())
-                        )
-                        .map((s) => (
-                          <motion.div
-                            key={s.id}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="p-5 rounded-xl border relative space-y-3"
-                            style={{
-                              background: "rgba(12,28,38,0.45)",
-                              borderColor: "rgba(43,170,143,0.15)",
-                            }}
-                          >
-                            <div className="flex flex-wrap items-start justify-between gap-2">
-                              <div>
-                                <h3 className="font-extrabold text-sm" style={{ color: "hsl(43,80%,90%)" }}>{s.name}</h3>
-                                <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1 text-[11px]" style={{ color: "rgba(232,196,90,0.4)" }}>
-                                  {s.email && (
-                                    <a href={`mailto:${s.email}`} className="hover:underline flex items-center gap-1">
-                                      📧 {s.email}
-                                    </a>
-                                  )}
-                                  {s.phone && (
-                                    <a href={`tel:${s.phone}`} className="hover:underline flex items-center gap-1">
-                                      📞 {s.phone}
-                                    </a>
-                                  )}
+
+                      {/* Table Body */}
+                      <div className="divide-y divide-white/5">
+                        {submissions
+                          .filter(s => 
+                            !search || 
+                            s.name.toLowerCase().includes(search.toLowerCase()) || 
+                            (s.email && s.email.toLowerCase().includes(search.toLowerCase())) || 
+                            (s.phone && s.phone.includes(search)) || 
+                            (s.subject && s.subject.toLowerCase().includes(search.toLowerCase())) || 
+                            s.message.toLowerCase().includes(search.toLowerCase())
+                          )
+                          .map((s) => {
+                            const isMessageExpanded = expandedOrderId === s.id + 100000; // Offset ID to avoid conflicts with orders
+                            return (
+                              <div
+                                key={s.id}
+                                className="transition-colors duration-150"
+                                style={{ background: isMessageExpanded ? "rgba(43,170,143,0.02)" : "transparent" }}
+                              >
+                                {/* Primary Row */}
+                                <div
+                                  onClick={() => setExpandedOrderId(isMessageExpanded ? null : s.id + 100000)}
+                                  className="grid items-center px-6 py-4 cursor-pointer hover:bg-white/5 transition-colors"
+                                  style={{
+                                    gridTemplateColumns: "1.5rem 10.5rem 13.5rem 8.5rem 1fr 4.5rem",
+                                  }}
+                                >
+                                  <span className="text-[10px] text-teal-400/50">{isMessageExpanded ? "▼" : "▶"}</span>
+                                  <span className="text-xs text-white/50">{new Date(s.createdAt).toLocaleString()}</span>
+                                  <span className="text-sm font-extrabold text-white">{s.name}</span>
+                                  <div className="text-xs pr-4 truncate space-y-0.5">
+                                    {s.email && <div className="text-white/80 font-medium">📧 {s.email}</div>}
+                                    {s.phone && <div className="text-white/50 font-medium">📞 {s.phone}</div>}
+                                  </div>
+                                  <div className="pr-6 truncate">
+                                    {s.subject && <span className="font-extrabold text-teal-400 mr-2">[{s.subject}]</span>}
+                                    <span className="text-xs text-white/60 italic">"{s.message}"</span>
+                                  </div>
+                                  <div className="flex justify-end">
+                                    {s.email && (
+                                      <a
+                                        href={`mailto:${s.email}?subject=RE: ${encodeURIComponent(s.subject || "Your inquiry with Match Stickers")}`}
+                                        className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold border hover:bg-white/10 cursor-pointer transition-colors"
+                                        style={{ borderColor: "rgba(43,170,143,0.25)", color: "rgba(43,170,143,0.85)" }}
+                                        title="Reply by Email"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        ✉️
+                                      </a>
+                                    )}
+                                  </div>
                                 </div>
+
+                                {/* Expanded detailed message */}
+                                <AnimatePresence>
+                                  {isMessageExpanded && (
+                                    <motion.div
+                                      initial={{ opacity: 0, height: 0 }}
+                                      animate={{ opacity: 1, height: "auto" }}
+                                      exit={{ opacity: 0, height: 0 }}
+                                      className="overflow-hidden bg-black/20 border-t border-b border-white/5"
+                                    >
+                                      <div className="px-10 py-6 text-left space-y-4">
+                                        <div className="flex items-center justify-between gap-4">
+                                          <div>
+                                            <h4 className="text-[10px] uppercase font-bold tracking-wider" style={{ color: "rgba(43,170,143,0.6)" }}>Full Subject</h4>
+                                            <p className="text-sm font-bold text-white mt-1">{s.subject || "(No Subject)"}</p>
+                                          </div>
+                                          {s.email && (
+                                            <a
+                                              href={`mailto:${s.email}?subject=RE: ${encodeURIComponent(s.subject || "Your Inquiry")}`}
+                                              className="px-4 py-2 rounded-xl font-bold text-xs flex items-center gap-1.5 border border-teal-500/30 hover:bg-teal-500/10 cursor-pointer text-teal-400 transition-colors shadow-sm"
+                                              onClick={(e) => e.stopPropagation()}
+                                            >
+                                              ✉️ Send Email Reply
+                                            </a>
+                                          )}
+                                        </div>
+                                        <div>
+                                          <h4 className="text-[10px] uppercase font-bold tracking-wider mb-2" style={{ color: "rgba(43,170,143,0.6)" }}>Sender Message</h4>
+                                          <div className="p-4 rounded-xl text-xs leading-relaxed text-white whitespace-pre-wrap"
+                                            style={{ background: "rgba(16,36,50,0.6)", border: "1px solid rgba(43,170,143,0.1)" }}>
+                                            {s.message}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
                               </div>
-                              <span className="text-[10px]" style={{ color: "rgba(232,196,90,0.3)" }}>
-                                {new Date(s.createdAt).toLocaleString()}
-                              </span>
-                            </div>
-
-                            {s.subject && (
-                              <p className="text-xs font-extrabold" style={{ color: "rgba(43,170,143,0.9)" }}>
-                                Subject: <span className="font-medium" style={{ color: "hsl(43,80%,85%)" }}>{s.subject}</span>
-                              </p>
-                            )}
-
-                            <div className="p-3.5 rounded-lg text-xs leading-relaxed"
-                              style={{ background: "rgba(16,36,50,0.5)", border: "1px solid rgba(43,170,143,0.08)", color: "hsl(43,80%,95%)" }}>
-                              {s.message}
-                            </div>
-                          </motion.div>
-                        ))
-                    )}
-                  </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
                 </div>
-
-              </div>
+              )}
             </div>
           )}
 
@@ -1487,6 +1908,45 @@ export default function Admin() {
                     />
                   </div>
 
+                  {/* Announcement Bar Toggle & Text */}
+                  <div className="pt-3 border-t border-white/5 space-y-4">
+                    <h4 className="font-bold text-xs uppercase tracking-wider text-teal-400">Sale Announcement Banner</h4>
+                    
+                    <label className="flex items-center gap-2.5 cursor-pointer">
+                      <div onClick={() => setAdminAnnouncementEnabled(!adminAnnouncementEnabled)}
+                        className="w-9 h-5 rounded-full relative transition-all duration-200 cursor-pointer"
+                        style={{ background: adminAnnouncementEnabled ? "rgba(43,170,143,0.8)" : "rgba(43,170,143,0.2)" }}>
+                        <motion.div animate={{ left: adminAnnouncementEnabled ? "calc(100% - 18px)" : "2px" }}
+                          transition={{ type:"spring", stiffness:500, damping:30 }}
+                          className="absolute top-[3px] w-3.5 h-3.5 rounded-full bg-white" />
+                      </div>
+                      <span className="text-xs font-semibold" style={{ color: adminAnnouncementEnabled ? "hsl(43,80%,85%)" : "rgba(232,196,90,0.4)" }}>
+                        {adminAnnouncementEnabled ? "Banner Active (Visible)" : "Banner Disabled (Hidden)"}
+                      </span>
+                    </label>
+
+                    {adminAnnouncementEnabled && (
+                      <div>
+                        <label className="block text-xs font-semibold mb-1.5" style={{ color: "rgba(43,170,143,0.7)" }}>
+                          Announcement Text
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={adminAnnouncementText}
+                          onChange={(e) => setAdminAnnouncementText(e.target.value)}
+                          placeholder="e.g. 🎉 FLASH SALE: Get 20% off all stickers with code LOVE20!"
+                          className="w-full bg-black/40 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors border"
+                          style={{ 
+                            borderColor: "rgba(43,170,143,0.2)", 
+                            background: "rgba(10,24,34,0.4)",
+                            color: "white" 
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+
                   <motion.button
                     type="submit"
                     whileHover={{ scale: 1.02 }}
@@ -1498,7 +1958,7 @@ export default function Admin() {
                       color: "hsl(204,46%,9%)"
                     }}
                   >
-                    💾 Save Billing Rules
+                    💾 Save Settings
                   </motion.button>
                 </form>
               </div>
@@ -1530,6 +1990,182 @@ export default function Admin() {
                   style={{ background:"rgba(232,87,58,0.12)", border:"1px solid rgba(232,87,58,0.25)", color:"rgba(232,87,58,0.8)" }}>
                   Reset to defaults
                 </motion.button>
+              </div>
+            </div>
+          )}
+
+          {/* ═══ COUPONS MANAGER ═══ */}
+          {nav === "coupons" && (
+            <div className="space-y-6">
+              {/* Stat Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                {[
+                  { label: "Total Coupons 🎟️", value: coupons.length, color: "rgba(43,170,143,0.9)" },
+                  { label: "Active Coupons 🟢", value: coupons.filter(c => c.active).length, color: "rgba(16,185,129,0.9)" },
+                  { label: "Average Discount 📈", value: coupons.length > 0 ? `${Math.round(coupons.reduce((sum, c) => sum + c.discountPct, 0) / coupons.length)}%` : "0%", color: "rgba(232,196,90,0.9)" },
+                ].map((stat) => (
+                  <div key={stat.label} className="rounded-2xl p-5" style={GLASS}>
+                    <p className="text-xs font-semibold mb-2" style={{ color: "rgba(232,196,90,0.5)" }}>{stat.label}</p>
+                    <p className="text-3xl font-black" style={{ color: stat.color }}>{stat.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Main Panel Content (Two Columns Layout) */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                {/* Left side: List Coupons (span 2) */}
+                <div className="lg:col-span-2 space-y-4">
+                  <div className="rounded-2xl overflow-hidden border" style={{ borderColor: "rgba(43,170,143,0.15)", ...GLASS }}>
+                    {/* Table Header */}
+                    <div className="grid items-center text-xs font-semibold px-6 py-4 select-none"
+                      style={{
+                        gridTemplateColumns: "1.5rem 1fr 6.5rem 8.5rem 8.5rem 3.5rem",
+                        color: "rgba(43,170,143,0.6)",
+                        borderBottom: "1px solid rgba(43,170,143,0.15)",
+                        background: "rgba(10,24,34,0.5)"
+                      }}>
+                      <span></span>
+                      <span>Promo Code</span>
+                      <span>Discount</span>
+                      <span className="text-center">Created Date</span>
+                      <span className="text-center">Status</span>
+                      <span></span>
+                    </div>
+
+                    {/* Table Body */}
+                    {coupons.length === 0 ? (
+                      <div className="py-20 text-center" style={{ color: "rgba(43,170,143,0.35)" }}>
+                        <p className="text-4xl mb-2">🎟️</p>
+                        <p className="text-sm font-semibold">No promotional coupons available yet.</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-white/5">
+                        {coupons.map((c) => {
+                          const isConfirm = confirmDeleteId === c.id;
+                          return (
+                            <div
+                              key={c.id}
+                              className="grid items-center px-6 py-4 hover:bg-white/5 transition-colors duration-150"
+                              style={{
+                                gridTemplateColumns: "1.5rem 1fr 6.5rem 8.5rem 8.5rem 3.5rem",
+                              }}
+                            >
+                              <span className="text-sm">🏷️</span>
+                              <span className="font-mono text-sm font-black text-white">{c.code}</span>
+                              <span className="text-sm font-extrabold text-emerald-400">{c.discountPct}% OFF</span>
+                              <span className="text-xs text-white/50 text-center">
+                                {c.createdAt ? new Date(c.createdAt).toLocaleDateString() : "Local"}
+                              </span>
+
+                              {/* Toggle Status */}
+                              <div className="flex justify-center">
+                                <button onClick={() => handleToggleCoupon(c.id, c.active)}
+                                  className="flex items-center gap-1.5 text-[10px] font-bold uppercase cursor-pointer border px-2.5 py-1 rounded-full tracking-wider w-24 justify-center hover:brightness-110 transition-all"
+                                  style={{
+                                    background: c.active ? "rgba(16,185,129,0.08)" : "rgba(232,87,58,0.08)",
+                                    borderColor: c.active ? "rgba(16,185,129,0.25)" : "rgba(232,87,58,0.25)",
+                                    color: c.active ? "#10b981" : "#ef4444"
+                                  }}>
+                                  <div className="w-2 h-2 rounded-full" style={{ background: c.active ? "#10b981" : "#ef4444" }} />
+                                  {c.active ? "Active" : "Disabled"}
+                                </button>
+                              </div>
+
+                              {/* Delete Button */}
+                              <div className="flex justify-end">
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.9 }}
+                                  onClick={() => {
+                                    if (isConfirm) {
+                                      handleDeleteCoupon(c.id);
+                                      setConfirmDeleteId(null);
+                                    } else {
+                                      setConfirmDeleteId(c.id);
+                                      setTimeout(() => setConfirmDeleteId(null), 3000);
+                                    }
+                                  }}
+                                  className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-semibold cursor-pointer border transition-all"
+                                  style={{
+                                    background: isConfirm ? "rgba(232,87,58,0.2)" : "rgba(232,87,58,0.05)",
+                                    borderColor: isConfirm ? "rgba(232,87,58,0.5)" : "rgba(232,87,58,0.2)",
+                                    color: "#ef4444"
+                                  }}
+                                  title={isConfirm ? "Click again to confirm delete" : "Delete Coupon"}
+                                >
+                                  {isConfirm ? "⚠️" : "🗑️"}
+                                </motion.button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right side: Add Coupon Form */}
+                <div className="space-y-4">
+                  <div className="rounded-2xl p-6" style={GLASS}>
+                    <h3 className="font-bold text-sm mb-5" style={{ color: "hsl(43,80%,85%)" }}>Add New Coupon</h3>
+                    <form onSubmit={handleCreateCoupon} className="space-y-5">
+                      <div>
+                        <label className="block text-xs font-semibold mb-1.5" style={{ color: "rgba(43,170,143,0.7)" }}>
+                          Promo Code (e.g. LOVE20)
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={couponCodeForm}
+                          onChange={(e) => setCouponCodeForm(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
+                          placeholder="ENTER CODE"
+                          className="w-full bg-black/40 rounded-xl px-4 py-2.5 text-sm font-mono outline-none transition-colors border"
+                          style={{
+                            borderColor: "rgba(43,170,143,0.2)",
+                            background: "rgba(10,24,34,0.4)",
+                            color: "white"
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold mb-1.5" style={{ color: "rgba(43,170,143,0.7)" }}>
+                          Discount Percentage (%)
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          required
+                          value={couponDiscountForm}
+                          onChange={(e) => setCouponDiscountForm(Math.min(100, Math.max(1, Number(e.target.value))))}
+                          className="w-full bg-black/40 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors border font-bold"
+                          style={{
+                            borderColor: "rgba(43,170,143,0.2)",
+                            background: "rgba(10,24,34,0.4)",
+                            color: "white"
+                          }}
+                        />
+                      </div>
+
+                      <motion.button
+                        type="submit"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full py-2.5 rounded-xl font-bold text-xs transition-all duration-300 cursor-pointer shadow-[0_0_16px_rgba(43,170,143,0.2)] flex items-center justify-center gap-1.5"
+                        style={{
+                          background: "linear-gradient(135deg, rgba(43,170,143,0.9), rgba(232,196,90,0.85))",
+                          border: "1px solid rgba(232,196,90,0.4)",
+                          color: "hsl(204,46%,9%)"
+                        }}
+                      >
+                        🎟️ Create Promo Coupon
+                      </motion.button>
+                    </form>
+                  </div>
+                </div>
+
               </div>
             </div>
           )}

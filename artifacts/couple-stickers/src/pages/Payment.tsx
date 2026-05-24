@@ -70,6 +70,13 @@ export default function Payment() {
   const [stickerPrice, setStickerPrice] = useState(40);
   const [billDiscount, setBillDiscount] = useState(0);
 
+  // Coupon states
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountPct: number } | null>(null);
+  const [couponError, setCouponError] = useState("");
+  const [couponSuccess, setCouponSuccess] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+
   useEffect(() => {
     try {
       const stickersRaw = localStorage.getItem("ours_selected_stickers");
@@ -101,7 +108,8 @@ export default function Payment() {
     .filter((s): s is NonNullable<typeof s> => !!s);
 
   const baseAmount = selectedStickersData.length * stickerPrice;
-  const totalAmount = Math.max(0, baseAmount - billDiscount);
+  const discountFromCoupon = appliedCoupon ? Math.round((baseAmount * appliedCoupon.discountPct) / 100) : 0;
+  const totalAmount = Math.max(0, baseAmount - billDiscount - discountFromCoupon);
 
   // Validation checks
   const isNameValid = buyerName.trim().length > 0;
@@ -111,6 +119,39 @@ export default function Payment() {
   const isDetailsValid = isNameValid && isEmailValid && isMobileValid && isAddressValid;
 
   const isUpiValid = !!receiptPhoto;
+
+  const handleApplyCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCouponError("");
+    setCouponSuccess("");
+    const code = couponInput.trim();
+    if (!code) return;
+
+    setCouponLoading(true);
+    try {
+      const response = await fetch(`/api/coupons/validate/${code}`);
+      const data = await response.json();
+      if (response.ok && data.valid) {
+        setAppliedCoupon({ code: data.code, discountPct: data.discountPct });
+        setCouponSuccess(`Coupon code applied! You got a ${data.discountPct}% discount.`);
+      } else {
+        setAppliedCoupon(null);
+        setCouponError(data.error || "Invalid coupon code.");
+      }
+    } catch (err) {
+      setAppliedCoupon(null);
+      setCouponError("Failed to validate coupon code. Please try again.");
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput("");
+    setCouponError("");
+    setCouponSuccess("");
+  };
 
   const handleNextToReview = (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,6 +198,8 @@ export default function Payment() {
           photos: uploadedPhotos,
           amount: totalAmount,
           receiptPhoto: receiptPhoto,
+          appliedCoupon: appliedCoupon ? appliedCoupon.code : null,
+          discountAmount: discountFromCoupon,
         }),
       });
 
@@ -278,7 +321,7 @@ export default function Payment() {
             <div className="bg-black/30 p-6 rounded-2xl border border-white/5 text-left mb-8 space-y-3.5">
               <div className="flex justify-between text-xs pb-2 border-b border-white/5">
                 <span className="text-white/40">Order ID:</span>
-                <span className="text-emerald-400 font-bold">#OURS-{orderId}</span>
+                <span className="text-emerald-400 font-bold">#MMS-{orderId}</span>
               </div>
               <div className="flex justify-between text-xs pb-2 border-b border-white/5">
                 <span className="text-white/40">Total Paid:</span>
@@ -334,7 +377,7 @@ export default function Payment() {
             ← Back to Photos
           </motion.button>
         </Link>
-        <span className="text-xl font-bold tracking-tighter" style={{ color:"hsl(43,80%,92%)" }}>Ours. 💖</span>
+        <span className="text-xl font-bold tracking-tighter" style={{ color:"hsl(43,80%,92%)" }}>Match Stickers 💖</span>
         <div className="w-20"></div>
       </div>
 
@@ -558,6 +601,53 @@ export default function Payment() {
                   )}
                 </div>
 
+                {/* Coupon Code Input */}
+                <div className="bg-black/30 p-5 rounded-2xl border border-white/5 space-y-3" style={{ background: "rgba(16,36,50,0.5)" }}>
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-teal-400">Apply Promo Coupon</h3>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g. LOVE20"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                      disabled={!!appliedCoupon}
+                      className="flex-1 bg-black/40 rounded-xl px-4 py-2.5 text-xs outline-none transition-colors border"
+                      style={{
+                        borderColor: appliedCoupon ? "rgba(16,185,129,0.3)" : "rgba(43,170,143,0.18)",
+                        color: "white"
+                      }}
+                    />
+                    {appliedCoupon ? (
+                      <button
+                        type="button"
+                        onClick={handleRemoveCoupon}
+                        className="px-4 py-2 rounded-xl text-xs font-bold bg-red-500/10 border border-red-500/25 text-red-400 hover:bg-red-500/20 cursor-pointer transition-colors"
+                      >
+                        Remove
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleApplyCoupon}
+                        disabled={couponLoading || !couponInput.trim()}
+                        className="px-5 py-2.5 rounded-xl text-xs font-bold text-teal-950 flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                        style={{
+                          background: "linear-gradient(135deg,rgba(43,170,143,0.95),rgba(232,196,90,0.9))",
+                          boxShadow: "0 2px 10px rgba(43,170,143,0.2)"
+                        }}
+                      >
+                        {couponLoading ? "..." : "Apply"}
+                      </button>
+                    )}
+                  </div>
+                  {couponError && (
+                    <p className="text-[10px] text-red-400 font-bold block mt-1">❌ {couponError}</p>
+                  )}
+                  {couponSuccess && (
+                    <p className="text-[10px] text-emerald-400 font-bold block mt-1">🎉 {couponSuccess}</p>
+                  )}
+                </div>
+
                 {/* Pricing Summary */}
                 <div className="space-y-2.5 border-t border-white/5 pt-4">
                   <div className="flex justify-between text-xs">
@@ -572,6 +662,12 @@ export default function Payment() {
                     <span style={{ color:"rgba(232,196,90,0.55)" }}>Base Amount</span>
                     <span className="font-semibold text-white/90">₹{baseAmount}</span>
                   </div>
+                  {appliedCoupon && (
+                    <div className="flex justify-between text-xs">
+                      <span style={{ color:"rgba(43,170,143,0.85)" }}>Coupon ({appliedCoupon.code} - {appliedCoupon.discountPct}%)</span>
+                      <span className="font-semibold text-emerald-400">-₹{discountFromCoupon}</span>
+                    </div>
+                  )}
                   {billDiscount > 0 && (
                     <div className="flex justify-between text-xs">
                       <span style={{ color:"rgba(43,170,143,0.85)" }}>Coupon Discount</span>

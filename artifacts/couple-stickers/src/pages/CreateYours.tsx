@@ -1,24 +1,13 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useLocation } from "wouter";
-import { useStickers, type Tag } from "@/hooks/useStickers";
+import { useStickers } from "@/hooks/useStickers";
 
 const MIN_SELECT = 9;
 
-const TAG_STYLES: Record<Tag, { bg: string; text: string; border: string }> = {
-  Romance:     { bg:"rgba(232,87,58,0.15)",   text:"rgba(232,87,58,0.95)",   border:"rgba(232,87,58,0.3)"   },
-  Cozy:        { bg:"rgba(240,147,106,0.15)", text:"rgba(240,147,106,0.95)", border:"rgba(240,147,106,0.3)" },
-  Cute:        { bg:"rgba(232,196,90,0.15)",  text:"rgba(232,196,90,0.95)",  border:"rgba(232,196,90,0.3)"  },
-  Playful:     { bg:"rgba(43,170,143,0.15)",  text:"rgba(43,170,143,0.95)",  border:"rgba(43,170,143,0.3)"  },
-  Emotional:   { bg:"rgba(139,92,246,0.15)",  text:"rgba(167,139,250,0.95)", border:"rgba(139,92,246,0.3)"  },
-  Classic:     { bg:"rgba(99,179,237,0.15)",  text:"rgba(147,210,255,0.95)", border:"rgba(99,179,237,0.3)"  },
-  Trending:    { bg:"rgba(236,72,153,0.15)",  text:"rgba(251,113,183,0.95)", border:"rgba(236,72,153,0.3)"  },
-  "Soft Love": { bg:"rgba(248,113,113,0.15)", text:"rgba(252,165,165,0.95)", border:"rgba(248,113,113,0.3)" },
-};
-
 export default function CreateYours() {
   const [, setLocation] = useLocation();
-  const { stickers }  = useStickers();
+  const { stickers, loading }  = useStickers();
   const visible       = stickers.filter((s) => s.enabled);
 
   const [selected,    setSelected]    = useState<number[]>(() => {
@@ -69,7 +58,7 @@ export default function CreateYours() {
             ← Back
           </motion.button>
         </Link>
-        <span className="text-xl font-bold tracking-tighter" style={{ color:"hsl(43,80%,92%)" }}>Ours. 💖</span>
+        <span className="text-xl font-bold tracking-tighter" style={{ color:"hsl(43,80%,92%)" }}>Match Stickers 💖</span>
         <motion.div layout className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-bold"
           style={{
             background: atMin ? "rgba(43,170,143,0.12)" : "rgba(29,58,74,0.6)",
@@ -113,108 +102,121 @@ export default function CreateYours() {
           </AnimatePresence>
         </motion.div>
 
-        {visible.length === 0 && (
+        {loading ? (
+          /* Skeleton loading grid */
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+            {[...Array(10)].map((_, i) => (
+              <div
+                key={i}
+                className="relative rounded-2xl overflow-hidden animate-pulse"
+                style={{
+                  background: "rgba(16,36,50,0.7)",
+                  border: "1px solid rgba(43,170,143,0.06)",
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.2), inset 0 1px 0 rgba(232,196,90,0.03)",
+                }}
+              >
+                {/* Art area — 1:1 square */}
+                <div style={{ margin: "10px 10px 0 10px", borderRadius: "14px", aspectRatio: "1/1", background: "rgba(29,58,74,0.2)" }} />
+
+                <div className="px-3 py-3.5">
+                  <div className="h-3 rounded-full w-2/3" style={{ background: "rgba(232,196,90,0.15)" }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : visible.length === 0 ? (
           <div className="text-center py-24">
             <p className="text-4xl mb-3">🎨</p>
             <p className="text-sm" style={{ color:"rgba(43,170,143,0.4)" }}>No stickers available yet.</p>
           </div>
+        ) : (
+          /* Grid */
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+            {visible.map((sticker, i) => {
+              const isSelected = selected.includes(sticker.id);
+              const selOrder   = selected.indexOf(sticker.id) + 1;
+              const hasPhoto   = !!sticker.image;
+
+              return (
+                <motion.div key={sticker.id}
+                  initial={{ opacity:0, y:20 }}
+                  animate={{ opacity:1, y:0, x:0 }}
+                  transition={{ delay:i * 0.025, duration:0.4 }}
+                  whileHover={{ y:-8, scale:1.04, transition:{ duration:0.18 } }}
+                  onClick={() => toggle(sticker.id)}
+                  className="relative cursor-pointer rounded-2xl overflow-hidden group"
+                  style={{
+                    background: isSelected ? "rgba(43,170,143,0.18)" : "rgba(16,36,50,0.92)",
+                    border: isSelected ? "2px solid rgba(43,170,143,0.65)" : "1px solid rgba(43,170,143,0.13)",
+                    boxShadow: isSelected ? "0 8px 24px rgba(43,170,143,0.25), inset 0 1px 0 rgba(232,196,90,0.12)" : "0 4px 16px rgba(0,0,0,0.3), inset 0 1px 0 rgba(232,196,90,0.06)",
+                    transition:"border-color 0.2s, box-shadow 0.2s, background 0.2s",
+                  }}>
+                  {/* Specular */}
+                  <div className="absolute top-0 left-[10%] right-[10%] h-px z-10"
+                    style={{ background:isSelected ? "linear-gradient(90deg,transparent,rgba(43,170,143,0.6),transparent)" : "linear-gradient(90deg,transparent,rgba(232,196,90,0.18),transparent)" }} />
+
+                  {/* Hover glow */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                    style={{ background:"radial-gradient(circle at 50% 30%, rgba(43,170,143,0.12) 0%, transparent 70%)" }} />
+
+                  {/* Art area — 1:1 square */}
+                  <div className="relative overflow-hidden" style={{ margin:"10px 10px 0 10px", borderRadius:"14px", aspectRatio:"1/1" }}>
+                    {/* Pulsing ring on selected */}
+                    {isSelected && (
+                      <motion.div className="absolute inset-0 rounded-[14px] z-10"
+                        animate={{ opacity:[0.5,0.15,0.5] }} transition={{ repeat:Infinity, duration:2.5 }}
+                        style={{ border:"1px solid rgba(43,170,143,0.5)" }} />
+                    )}
+
+                    {hasPhoto ? (
+                      /* Uploaded photo — always 1:1 object-cover */
+                      <img src={sticker.image} alt={sticker.name}
+                        className="w-full h-full object-cover"
+                        style={{ display:"block" }} />
+                    ) : (
+                      /* Emoji fallback */
+                      <div className="w-full h-full flex items-center justify-center"
+                        style={{ background:isSelected ? "rgba(43,170,143,0.08)" : "rgba(29,58,74,0.35)" }}>
+                        <motion.span className="text-4xl select-none"
+                          animate={isSelected ? { scale:[1,1.15,1] } : { scale:1 }}
+                          transition={isSelected ? { duration:0.4 } : {}}>
+                          {sticker.emoji}
+                        </motion.span>
+                      </div>
+                    )}
+
+                    {/* Trending badge (top-left inside art) */}
+                    {sticker.trending && (
+                      <div className="absolute top-1.5 left-1.5 z-20 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                        style={{ background:"rgba(251,113,183,0.85)", color:"white", backdropFilter:"blur(8px)" }}>
+                        🔥
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="px-3 py-3.5">
+                    <p className="text-xs font-bold truncate" style={{ color:isSelected ? "hsl(43,80%,96%)" : "hsl(43,80%,82%)" }}>
+                      {sticker.name}
+                    </p>
+                  </div>
+
+                  {/* Selection number badge */}
+                  <AnimatePresence>
+                    {isSelected && (
+                      <motion.div initial={{ opacity:0, scale:0.4, rotate:-20 }} animate={{ opacity:1, scale:1, rotate:0 }} exit={{ opacity:0, scale:0.4 }}
+                        transition={{ type:"spring", stiffness:400, damping:20 }}
+                        className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black z-20"
+                        style={{ background:"rgba(43,170,143,0.95)", boxShadow:"0 2px 12px rgba(43,170,143,0.5)", color:"hsl(204,46%,9%)" }}>
+                        {selOrder}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                </motion.div>
+              );
+            })}
+          </div>
         )}
-
-        {/* Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
-          {visible.map((sticker, i) => {
-            const isSelected = selected.includes(sticker.id);
-            const selOrder   = selected.indexOf(sticker.id) + 1;
-            const tag        = TAG_STYLES[sticker.tag];
-            const hasPhoto   = !!sticker.image;
-
-            return (
-              <motion.div key={sticker.id}
-                initial={{ opacity:0, y:20 }}
-                animate={{ opacity:1, y:0, x:0 }}
-                transition={{ delay:i * 0.025, duration:0.4 }}
-                whileHover={{ y:-8, scale:1.04, transition:{ duration:0.18 } }}
-                onClick={() => toggle(sticker.id)}
-                className="relative cursor-pointer rounded-2xl overflow-hidden group"
-                style={{
-                  background: isSelected ? "rgba(43,170,143,0.13)" : "rgba(16,36,50,0.7)",
-                  backdropFilter:"blur(20px) saturate(180%)",
-                  WebkitBackdropFilter:"blur(20px) saturate(180%)",
-                  border: isSelected ? "2px solid rgba(43,170,143,0.65)" : "1px solid rgba(43,170,143,0.13)",
-                  boxShadow: isSelected ? "0 0 28px rgba(43,170,143,0.3),0 8px 28px rgba(0,0,0,0.4),inset 0 1px 0 rgba(232,196,90,0.15)" : "0 4px 20px rgba(0,0,0,0.3),inset 0 1px 0 rgba(232,196,90,0.07)",
-                  transition:"border-color 0.2s, box-shadow 0.2s, background 0.2s",
-                }}>
-                {/* Specular */}
-                <div className="absolute top-0 left-[10%] right-[10%] h-px z-10"
-                  style={{ background:isSelected ? "linear-gradient(90deg,transparent,rgba(43,170,143,0.6),transparent)" : "linear-gradient(90deg,transparent,rgba(232,196,90,0.18),transparent)" }} />
-
-                {/* Hover glow */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                  style={{ background:"radial-gradient(circle at 50% 30%, rgba(43,170,143,0.12) 0%, transparent 70%)" }} />
-
-                {/* Art area — 1:1 square */}
-                <div className="relative overflow-hidden" style={{ margin:"10px 10px 0 10px", borderRadius:"14px", aspectRatio:"1/1" }}>
-                  {/* Pulsing ring on selected */}
-                  {isSelected && (
-                    <motion.div className="absolute inset-0 rounded-[14px] z-10"
-                      animate={{ opacity:[0.5,0.15,0.5] }} transition={{ repeat:Infinity, duration:2.5 }}
-                      style={{ border:"1px solid rgba(43,170,143,0.5)" }} />
-                  )}
-
-                  {hasPhoto ? (
-                    /* Uploaded photo — always 1:1 object-cover */
-                    <img src={sticker.image} alt={sticker.name}
-                      className="w-full h-full object-cover"
-                      style={{ display:"block" }} />
-                  ) : (
-                    /* Emoji fallback */
-                    <div className="w-full h-full flex items-center justify-center"
-                      style={{ background:isSelected ? "rgba(43,170,143,0.08)" : "rgba(29,58,74,0.35)" }}>
-                      <motion.span className="text-4xl select-none"
-                        animate={isSelected ? { scale:[1,1.15,1] } : { scale:1 }}
-                        transition={isSelected ? { duration:0.4 } : {}}>
-                        {sticker.emoji}
-                      </motion.span>
-                    </div>
-                  )}
-
-                  {/* Trending badge (top-left inside art) */}
-                  {sticker.trending && (
-                    <div className="absolute top-1.5 left-1.5 z-20 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                      style={{ background:"rgba(251,113,183,0.85)", color:"white", backdropFilter:"blur(8px)" }}>
-                      🔥
-                    </div>
-                  )}
-                </div>
-
-                {/* Footer */}
-                <div className="px-3 py-3">
-                  <p className="text-xs font-bold mb-1.5 truncate" style={{ color:isSelected ? "hsl(43,80%,96%)" : "hsl(43,80%,82%)" }}>
-                    {sticker.name}
-                  </p>
-                  <span className="inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                    style={{ background:tag.bg, color:tag.text, border:`1px solid ${tag.border}` }}>
-                    {sticker.tag}
-                  </span>
-                </div>
-
-                {/* Selection number badge */}
-                <AnimatePresence>
-                  {isSelected && (
-                    <motion.div initial={{ opacity:0, scale:0.4, rotate:-20 }} animate={{ opacity:1, scale:1, rotate:0 }} exit={{ opacity:0, scale:0.4 }}
-                      transition={{ type:"spring", stiffness:400, damping:20 }}
-                      className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black z-20"
-                      style={{ background:"rgba(43,170,143,0.95)", boxShadow:"0 2px 12px rgba(43,170,143,0.5)", color:"hsl(204,46%,9%)" }}>
-                      {selOrder}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-
-              </motion.div>
-            );
-          })}
-        </div>
       </div>
 
       {/* Sticky bottom bar */}

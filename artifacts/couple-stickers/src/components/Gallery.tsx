@@ -35,19 +35,6 @@ export function Gallery() {
               See how others are capturing their favorite moments in sticker form.
             </p>
           </div>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.97 }}
-            className="rounded-full text-sm px-7 h-10 font-bold cursor-pointer shrink-0"
-            style={{
-              background: "rgba(43,170,143,0.15)",
-              border: "1px solid rgba(43,170,143,0.35)",
-              color: "rgba(43,170,143,0.9)",
-              boxShadow: "0 4px 16px rgba(43,170,143,0.15)",
-            }}
-          >
-            View All →
-          </motion.button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
