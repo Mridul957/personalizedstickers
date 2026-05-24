@@ -41,18 +41,28 @@ export function useStickers() {
   const [stickers, setStickers] = useState<Sticker[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (retryCount = 0) => {
     try {
-      setLoading(true);
+      if (retryCount === 0) setLoading(true);
       const res = await fetch("/api/stickers");
       if (res.ok) {
         const data = await res.json();
         setStickers(data);
+        setLoading(false);
+      } else if ((res.status === 504 || res.status === 502 || res.status === 503) && retryCount < 6) {
+        console.log(`Server might be waking up (Render cold start). Retrying in 5s... (Attempt ${retryCount + 1})`);
+        setTimeout(() => refresh(retryCount + 1), 5000);
+      } else {
+        setLoading(false);
       }
     } catch (e) {
       console.error("Failed to fetch stickers from backend:", e);
-    } finally {
-      setLoading(false);
+      if (retryCount < 6) {
+        console.log(`Network error, retrying in 5s... (Attempt ${retryCount + 1})`);
+        setTimeout(() => refresh(retryCount + 1), 5000);
+      } else {
+        setLoading(false);
+      }
     }
   }, []);
 
