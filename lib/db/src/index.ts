@@ -584,8 +584,29 @@ export function updateSettings(data: SettingsData): SettingsData {
 // --- Stickers Table DB Adapter & Seeder Functions ---
 
 async function seedStickersIfEmpty() {
-  // Seeder disabled to prevent default/old stickers from ever repopulating.
-  return;
+  if (!usePostgres || !dbInstance) return;
+  try {
+    const existing = await dbInstance.select().from(stickersTable).limit(1);
+    if (existing.length === 0) {
+      console.log("Supabase stickers table is empty. Seeding default stickers...");
+      for (const s of DEFAULT_STICKERS_DATA) {
+        await dbInstance
+          .insert(stickersTable)
+          .values({
+            name: s.name,
+            tag: s.tag,
+            emoji: s.emoji,
+            image: null,
+            enabled: s.enabled,
+            trending: s.trending,
+          })
+          .onConflictDoNothing();
+      }
+      console.log(`Successfully seeded ${DEFAULT_STICKERS_DATA.length} default stickers to Supabase!`);
+    }
+  } catch (error) {
+    console.error("Failed to seed default stickers to Supabase:", error);
+  }
 }
 
 export async function getStickers(): Promise<any[]> {
